@@ -50,7 +50,7 @@ repeat offenders — while also defending groups against spam and message floodi
   because the Anti-Raid module already handles group-wide raids. All configuration
   lives in `data/sticker.json` (never hard-coded).
 - **Admin commands** — `!warn`, `!clearwarn`, `!warnings`, `!ban`, `!unban`, `!kick`,
-  `!tempban`, `!antinsfw`, `!reloadnsfw`, `!antiad`, `!reloadad`, `!antiraid`,
+  `!tempban`, `!antitoxic status|on|off`, `!reloadtoxic`, `!antinsfw`, `!reloadnsfw`, `!antiad`, `!reloadad`, `!antiraid`,
   `!raidmode`, `!raidstatus`, `!reloadraid`, `!antisticker`, `!stickerstatus`,
   `!reloadsticker`, `!rules`, `!rule`, `!addrule`, `!editrule`, `!deleterule`,
   `!exportrules`, `!settings`, `!help`, `!stats`, `!memory`, `!uptime`.
@@ -588,7 +588,7 @@ is stored in an HttpOnly session cookie (24h). Log out clears it.
 
 ### What you can do
 - **Overview** — uptime, active bans, total warnings, messages seen, memory, per-module stats.
-- **Modules** — turn NSFW / Advertisement / Raid / Sticker on or off and edit their limits (warn limit, Raid Mode duration, sticker thresholds, …). Saving reloads the live service instantly.
+- **Modules** — turn AntiToxic / NSFW / Advertisement / Raid / Sticker on or off and edit their limits (warn limit, Raid Mode duration, sticker thresholds, …). Saving reloads the live service instantly.
 - **Rules** — create, edit, and delete rules (same validation as `!addrule`/`!editrule`/`!deleterule`).
 - **Incidents / Bans / Warnings** — read-only recent-activity tables, filterable by module.
 
@@ -710,7 +710,7 @@ https://chat.whatsapp.com/XXXXXXXXXXXX
 
 ## 🩺 Health, backup & recovery
 
-- **Backups:** every 12h the four JSON files are copied to `data/backups/<timestamp>/` (the 14
+- **Backups:** every 12h the JSON files are copied to `data/backups/<timestamp>/` (the 14
   most recent are kept). To restore, stop the bot and copy a backup back into `data/`.
 - **Health:** a heartbeat is logged every 5 minutes (`!stats` / `!memory` / `!uptime` show live
   figures).
@@ -725,8 +725,7 @@ https://chat.whatsapp.com/XXXXXXXXXXXX
 
 - **Add toxic words:** edit `data/badwords.json` (categories: `indonesian`, `english`, `slurs`,
   `hateSpeech`, `harassment`, `spamInsults`) and optionally `patterns` (regex, applied to the
-  sanitised text). No restart needed if you add a `!reloadbadwords` command or call
-  `ToxicityService.reload()` from a handler.
+  sanitised text). No restart needed — run `!reloadtoxic` to reload at runtime.
 - **Add a command:** create `src/commands/<name>.js` exporting
   `{ name, description, adminOnly, usage, run(ctx) }` and register it in `src/commands/index.js`.
 
