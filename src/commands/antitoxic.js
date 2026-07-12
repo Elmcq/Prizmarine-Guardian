@@ -16,15 +16,29 @@ export default {
  return ctx.message.reply(statusText('AntiToxic', settings.enabled, [
  `Detections: ${stats.detections}`,
  `Keywords: ${settings.keywords}`,
+ `Patterns: ${settings.patterns}`,
  `Top category: ${stats.mostTriggeredCategory || 'None'}`,
  ]));
  }
  const enabled = action === 'on';
  await ctx.repos.badwords.setEnabled(enabled);
+ if (enabled) {
+ await ctx.repos.badwords.reload();
+ ctx.services.toxicity.reload();
+ }
+ const settings = ctx.repos.badwords.getSettings();
+ ctx.logger.info('AntiToxic state changed', {
+ enabled,
+ keywords: settings.keywords,
+ patterns: settings.patterns,
+ moderator: ctx.authorId,
+ });
  await ctx.message.reply(successText(
  `AntiToxic ${enabled ? 'enabled' : 'disabled'}`,
  'Completed',
- `Incoming messages ${enabled ? 'will be scanned' : 'will not be scanned'}.`,
+ enabled
+ ? `${settings.keywords} keywords and ${settings.patterns} patterns loaded. Incoming group messages will be scanned.`
+ : 'Incoming messages will not be scanned.',
  ));
  },
 };

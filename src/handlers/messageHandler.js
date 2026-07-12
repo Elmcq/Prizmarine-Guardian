@@ -48,13 +48,17 @@ export function registerMessageHandler({ client, repos, services, config, logger
  }
  }
 
- if (isGroup) {
- const moderate = await shouldModerate({ message, client, chat, authorId, config });
- if (!moderate) return;
- if (services.toxicity.isEnabled()) {
+ if (isGroup && !message.fromMe && services.toxicity.isEnabled()) {
  const detection = services.toxicity.detect(body);
- logger.debug('Toxicity scan', { sanitized: detection.sanitized, category: detection.category, keyword: detection.keyword, isToxic: detection.isToxic });
  if (detection.isToxic) {
+ logger.info('AntiToxic match', {
+ enabled: true,
+ sanitized: detection.sanitized,
+ category: detection.category,
+ keyword: detection.keyword,
+ groupId,
+ authorId,
+ });
  const incident = await repos.badwords.addIncident({
  group: groupId,
  user: authorId,
@@ -75,6 +79,10 @@ export function registerMessageHandler({ client, repos, services, config, logger
  return;
  }
  }
+
+ if (isGroup) {
+ const moderate = await shouldModerate({ message, client, chat, authorId, config });
+ if (!moderate) return;
  const abuse = services.spam.check(groupId, authorId, body);
  if (abuse) {
  const cooldownKey = `abuse:${groupId}:${authorId}`;
