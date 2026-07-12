@@ -52,9 +52,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 .sign svg {
   width: 22px;
+  flex-shrink: 0;
 }
 .sign svg path {
   fill: black;
@@ -77,6 +79,7 @@ body {
 }
 .Btn:hover .sign {
   width: 30%;
+  min-width: 36px;
   transition-duration: 0.3s;
   padding-left: 20px;
 }
