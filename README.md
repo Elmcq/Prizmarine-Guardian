@@ -1,6 +1,6 @@
-# 🛡️ Prizmarine Guardian
-
 ![Prizmarine Guardian Banner](https://i.ibb.co.com/zyFpPYf/New-Project.png)
+
+# 🛡️ Prizmarine Guardian
 
 A production-ready **WhatsApp group moderation bot** built with **Node.js 20 (ES Modules)**,
 [`whatsapp-web.js`](https://github.com/pedroslopez/whatsapp-web.js), **lowdb**, **Winston** and **node-cron**.
