@@ -12,9 +12,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/topbar-brand.css" />
 </head>
 <body>
-  <!-- Login overlay -->
   <div id="login" class="overlay">
     <form id="login-form" class="login-card">
       <h1>🛡️ Prizmarine Guardian</h1>
@@ -25,19 +25,16 @@
     </form>
   </div>
 
-  <!-- Main app -->
   <div id="app" class="hidden">
-    <!-- Top bar -->
     <header class="topbar">
-      <span class="topbar-brand">🛡️ Prizmarine Guardian</span>
+      <span class="topbar-brand" id="topbar-brand" aria-live="polite">🛡️ Prizmarine Guardian</span>
       <span class="topbar-divider"></span>
       <a href="#" id="topbar-logout" class="topbar-logout">
-        <svg viewBox="0 0 512 512" width="14" height="14"><path fill="currentColor" d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path></svg>
+        <svg viewBox="0 0 512 512" width="14" height="14"><path fill="currentColor" d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9 9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path></svg>
         Logout
       </a>
     </header>
 
-    <!-- Content -->
     <main class="content">
       <section id="overview">
         <h2>Overview</h2>
@@ -91,7 +88,6 @@
     </main>
   </div>
 
-  <!-- Rule editor modal -->
   <div id="rule-modal" class="overlay hidden">
     <form id="rule-form" class="modal">
       <h2 id="rule-modal-title">Add rule</h2>
@@ -117,6 +113,8 @@
 
   <div id="toast" class="toast hidden"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="/topbar-brand.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

@@ -1,0 +1,24 @@
+.topbar-brand {
+ display: block;
+ width: clamp(154px, 42vw, 190px);
+ overflow: hidden;
+ perspective: 600px;
+ transform-style: preserve-3d;
+ text-align: center;
+ text-overflow: ellipsis;
+ white-space: nowrap;
+ will-change: transform, opacity;
+}
+
+@media (max-width: 420px) {
+ .topbar-brand {
+  width: clamp(132px, 42vw, 154px);
+  font-size: 12px;
+ }
+}
+
+@media (prefers-reduced-motion: reduce) {
+ .topbar-brand {
+  will-change: auto;
+ }
+}
