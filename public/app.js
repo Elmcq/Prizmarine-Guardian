@@ -1,6 +1,27 @@
 'use strict';
 
+import { animateSlotText, buildSlotText, clearSlotText } from 'https://cdn.jsdelivr.net/npm/slot-text@0.3.1/+esm';
+
 const $ = (sel) => document.querySelector(sel);
+
+const slotInstances = new Map();
+
+function roll(el, text, opts = {}) {
+  if (!el) return;
+  if (slotInstances.has(el)) {
+    slotInstances.get(el)(text);
+    return;
+  }
+  buildSlotText(el, text);
+  const api = { element: el, value: text, set(newText, o) { animateSlotText(el, newText, { interrupt: true, ...opts, ...o }); } };
+  slotInstances.set(el, (newText) => api.set(newText));
+}
+
+function rollToast(el, text) {
+  if (!el) return;
+  buildSlotText(el, text);
+  animateSlotText(el, text, { stagger: 30, duration: 200 });
+}
 
 async function api(path, opts = {}) {
   const res = await fetch(path, {
@@ -23,7 +44,7 @@ async function api(path, opts = {}) {
 let toastTimer = null;
 function toast(msg) {
   const t = $('#toast');
-  t.textContent = msg;
+  rollToast(t, msg);
   t.classList.remove('hidden');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.add('hidden'), 2600);
@@ -51,7 +72,8 @@ $('#login-form').addEventListener('submit', async (e) => {
     $('#token').value = '';
     await boot();
   } catch (err) {
-    $('#login-error').textContent = err.message;
+    const errEl = $('#login-error');
+    errEl.textContent = err.message;
   }
 });
 
@@ -68,7 +90,7 @@ async function boot() {
     const me = await api('/api/auth/me');
     if (!me.authed) throw new Error('not authed');
   } catch {
-    return; // api() already showed login
+    return;
   }
   showApp();
   await Promise.all([loadOverview(), loadModules(), loadRules()]);
@@ -88,16 +110,32 @@ async function loadOverview() {
     { label: 'Memory (RSS)', value: `${mem.rssMb} MB` },
     { label: 'Rules', value: d.rules.total },
   ];
-  $('#overview-cards').innerHTML = cards.map((c) => `
-    <div class="card">
-      <div class="stat">${escapeHtml(String(c.value))}</div>
-      <div class="stat-label">${escapeHtml(c.label)}</div>
-    </div>`).join('');
+
+  const container = $('#overview-cards');
+  const existing = container.querySelectorAll('.card');
+
+  if (existing.length === 0) {
+    container.innerHTML = cards.map((c) => `
+      <div class="card">
+        <div class="stat" data-slot></div>
+        <div class="stat-label" data-slot-label>${escapeHtml(c.label)}</div>
+      </div>`).join('');
+    container.querySelectorAll('.card').forEach((card, i) => {
+      roll(card.querySelector('[data-slot]'), String(cards[i].value), { stagger: 20, duration: 250 });
+    });
+  } else {
+    existing.forEach((card, i) => {
+      if (cards[i]) {
+        roll(card.querySelector('.stat'), String(cards[i].value));
+      }
+    });
+  }
 }
 
 async function loadModules() {
   const list = await api('/api/modules');
-  $('#modules-cards').innerHTML = list.map((m) => {
+  const container = $('#modules-cards');
+  container.innerHTML = list.map((m) => {
     const fields = m.fields.map((f) => {
       const val = m.settings[f.key];
       const input = f.type === 'bool'
@@ -108,7 +146,7 @@ async function loadModules() {
     return `
     <div class="card" data-key="${m.key}">
       <div class="module-head">
-        <h3>${escapeHtml(m.label)}</h3>
+        <h3 data-slot>${escapeHtml(m.label)}</h3>
         <label class="switch">
           <input type="checkbox" class="mod-enabled" ${m.enabled ? 'checked' : ''} />
           <span class="slider"></span>
@@ -119,8 +157,14 @@ async function loadModules() {
     </div>`;
   }).join('');
 
-  document.querySelectorAll('#modules-cards .card').forEach((card) => {
+  container.querySelectorAll('.card').forEach((card) => {
     card.querySelector('.mod-save').addEventListener('click', () => saveModule(card));
+    const h3 = card.querySelector('[data-slot]');
+    if (h3) {
+      const origText = h3.textContent;
+      clearSlotText(h3, origText);
+      roll(h3, origText, { stagger: 30, duration: 220 });
+    }
   });
 }
 
