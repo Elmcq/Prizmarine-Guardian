@@ -77,8 +77,6 @@ async function boot() {
 
 async function loadOverview() {
   const d = await api('/api/overview');
-  $('#bot-name').textContent = d.bot.name;
-  $('#bot-meta').textContent = `owner: ${d.bot.owner || '-'} · uptime ${d.bot.uptimeHuman}`;
   const mem = d.health.memory;
   const cards = [
     { label: 'Uptime', value: d.bot.uptimeHuman },
