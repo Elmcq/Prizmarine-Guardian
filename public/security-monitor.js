@@ -43,6 +43,17 @@
  return response.json();
  };
 
+ async function loadPolicy() {
+ try {
+ const policy = await request('/api/settings/warning-escalation');
+ const high = policy.levels.find((level) => level.severity === 'high') || policy.levels[0];
+ const punishment = policy.levels.find((level) => level.action === 'tempban' || level.action === 'ban') || policy.levels.at(-1);
+ document.querySelector('#escalation-high').value = high.threshold;
+ document.querySelector('#escalation-punish').value = punishment.threshold;
+ document.querySelector('#escalation-duration').value = Math.max(1, Math.round((punishment.durationMs || 3_600_000) / 60_000));
+ } catch {}
+ }
+
  async function loadMonitoring() {
  if (document.hidden || document.querySelector('#app')?.classList.contains('hidden')) return;
  try {
@@ -61,17 +72,7 @@
   <table><thead><tr><th>Time</th><th>Action</th><th>User</th><th>Moderator</th><th>Reason</th></tr></thead><tbody>
   ${actions.map((item) => `<tr><td>${escapeHtml(new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))}</td><td><span class="audit-action">${escapeHtml(item.action)}</span></td><td>${escapeHtml(shortId(item.user))}</td><td>${escapeHtml(shortId(item.moderator))}</td><td title="${escapeHtml(item.reason)}">${escapeHtml(item.reason || '-')}</td></tr>`).join('')}
   </tbody></table>` : '<p class="monitor-empty">No moderation actions yet.</p>';
- } catch {}
- }
-
- async function loadPolicy() {
- try {
- const policy = await request('/api/settings/warning-escalation');
- const high = policy.levels.find((level) => level.severity === 'high') || policy.levels[0];
- const punishment = policy.levels.find((level) => level.action === 'tempban' || level.action === 'ban') || policy.levels.at(-1);
- document.querySelector('#escalation-high').value = high.threshold;
- document.querySelector('#escalation-punish').value = punishment.threshold;
- document.querySelector('#escalation-duration').value = Math.max(1, Math.round((punishment.durationMs || 3_600_000) / 60_000));
+ if (!document.querySelector('#escalation-high').value) loadPolicy();
  } catch {}
  }
 
@@ -83,6 +84,7 @@
  const punish = Number(document.querySelector('#escalation-punish').value);
  const durationMs = Number(document.querySelector('#escalation-duration').value) * 60_000;
  try {
+ if (high <= 1) throw new Error('Higher severity threshold must be above 1.');
  if (high >= punish) throw new Error('Punishment threshold must be higher.');
  await request('/api/settings/warning-escalation', {
  method: 'PUT',

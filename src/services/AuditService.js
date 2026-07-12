@@ -1,5 +1,10 @@
 import { EVENTS } from '../config/constants.js';
 
+const SETTINGS_COMMANDS = new Set([
+ 'settings', 'antinsfw', 'antiad', 'antiraid', 'antisticker',
+ 'raidmode', 'reloadnsfw', 'reloadad', 'reloadraid', 'reloadsticker',
+]);
+
 export class AuditService {
  constructor({ repo, eventBus, logger }) {
  this.repo = repo;
@@ -31,12 +36,18 @@ export class AuditService {
  action: 'SETTINGS_CHANGED', user: p.target || p.key || 'global', moderator: p.moderator || 'dashboard',
  reason: p.reason || 'Settings updated', details: p,
  }));
+ this.listen(EVENTS.COMMAND_EXECUTED, (p) => SETTINGS_COMMANDS.has(p.command) ? ({
+ action: 'SETTINGS_COMMAND', user: p.groupId || 'global', moderator: p.authorId,
+ groupId: p.groupId, reason: `${p.command} command executed`,
+ }) : null);
  return this;
  }
 
  listen(event, map) {
  const listener = (payload = {}) => {
- Promise.resolve(this.repo.add({ timestamp: Date.now(), ...map(payload) }))
+ const record = map(payload);
+ if (!record) return;
+ Promise.resolve(this.repo.add({ timestamp: Date.now(), ...record }))
  .catch((err) => this.logger.error('Audit write failed', { event, error: err.message }));
  };
  this.eventBus.on(event, listener);

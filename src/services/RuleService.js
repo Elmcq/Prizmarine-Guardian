@@ -72,7 +72,9 @@ export class RuleService {
  output.cooldown = Math.floor(cooldown);
  }
  if (!partial || input.enabled !== undefined) {
- output.enabled = input.enabled === true || input.enabled === 'true';
+ output.enabled = input.enabled === undefined
+ ? true
+ : input.enabled === true || String(input.enabled).toLowerCase() === 'true';
  }
  return output;
  }
@@ -106,6 +108,7 @@ export class RuleService {
  const existing = this.getRule(id);
  if (!existing) throw new Error(`Rule "${id}" not found.`);
  const normalized = this.normalizeInput(patch, true);
+ if (!Object.keys(normalized).length) throw new Error('No supported rule fields supplied.');
  await this.repo.updateRule(existing.id, normalized);
  const updated = this.getRule(existing.id);
  this._log('edited', moderatorId, { ruleId: existing.id, old: existing, new: updated });
@@ -130,10 +133,7 @@ export class RuleService {
  const key = `${rule.id}:${groupId || 'direct'}:${targetId || 'unknown'}`;
  const now = Date.now();
  const expiresAt = this.cooldowns.get(key) || 0;
- if (expiresAt > now) {
- const seconds = Math.ceil((expiresAt - now) / 1000);
- throw new Error(`Rule ${rule.id} is on cooldown for ${seconds}s.`);
- }
+ if (expiresAt > now) throw new Error(`Rule ${rule.id} is on cooldown for ${Math.ceil((expiresAt - now) / 1000)}s.`);
  this.cooldowns.set(key, now + rule.cooldown);
  }
 
@@ -148,7 +148,7 @@ export class RuleService {
  if (mentionTokens.has(arg)) continue;
  if (!ruleId) {
  const key = keys.find((item) => item.toLowerCase() === String(arg).toLowerCase());
- if (key && this.normalizeRule(rules[key]).enabled) {
+ if (key) {
  ruleId = key;
  continue;
  }

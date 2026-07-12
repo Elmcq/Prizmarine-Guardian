@@ -43,10 +43,14 @@ export class SettingsRepository {
  const stored = this.db.data.warningEscalation;
  if (stored?.levels?.length) return structuredClone(stored);
  const limit = Math.max(1, Number(fallbackLimit) || 3);
- const levels = [
- { threshold: 1, severity: 'normal', action: 'warn' },
- ];
- if (limit > 1) levels.push({ threshold: Math.max(2, limit - 1), severity: 'high', action: 'warn' });
+ if (limit === 1) {
+ return {
+ enabled: true,
+ levels: [{ threshold: 1, severity: 'critical', action: 'tempban', durationMs: fallbackDurationMs }],
+ };
+ }
+ const levels = [{ threshold: 1, severity: 'normal', action: 'warn' }];
+ if (limit > 2) levels.push({ threshold: limit - 1, severity: 'high', action: 'warn' });
  levels.push({ threshold: limit, severity: 'critical', action: 'tempban', durationMs: fallbackDurationMs });
  return { enabled: true, levels };
  }
