@@ -51,6 +51,8 @@ export function registerMessageHandler({
       const ownerCheck = isOwner(authorId, config.owner);
       const isAdmin = isGroup ? await isGroupAdmin(client, chat, authorId) : false;
 
+      logger.info('Auth debug', { authorId, ownerConfig: config.owner, ownerCheck, isAdmin, isGroup });
+
       const body = (message.body || '').trim();
 
       // ---- 1) Command routing ----
