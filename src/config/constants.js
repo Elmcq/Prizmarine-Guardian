@@ -34,6 +34,7 @@ export const EVENTS = Object.freeze({
  RULE_CHANGED: 'rule:changed',
  SETTINGS_CHANGED: 'settings:changed',
  USER_KICKED: 'user:kicked',
+ TOXICITY_DETECTED: 'toxicity:detected',
 });
 
 export const LIMITS = Object.freeze({
@@ -51,12 +52,7 @@ export const LIMITS = Object.freeze({
 
 export const PUNISHMENTS = Object.freeze({
  LIST: Object.freeze(['Warn', 'Kick', 'TempBan', 'Ban']),
- DISPLAY: Object.freeze({
- Warn: 'Warning',
- Kick: 'Kick',
- TempBan: 'TempBan',
- Ban: 'Ban',
- }),
+ DISPLAY: Object.freeze({ Warn: 'Warning', Kick: 'Kick', TempBan: 'TempBan', Ban: 'Ban' }),
 });
 
 export const RULE_SEVERITIES = Object.freeze(['low', 'medium', 'high', 'critical']);
@@ -67,6 +63,7 @@ export const DEFAULTS = Object.freeze({
  settings: { groupInviteLinks: {}, messagesSeen: 0, blockedMessages: 0 },
  audit: { records: [] },
  badwords: {
+ enabled: true,
  indonesian: [],
  english: [],
  slurs: [],
@@ -74,29 +71,20 @@ export const DEFAULTS = Object.freeze({
  harassment: [],
  spamInsults: [],
  patterns: [],
+ incidents: [],
  },
  nsfw: {
  enabled: true,
  warnLimit: 3,
  highSeverityBan: true,
- categories: {
- sexual_terms: [],
- pornography: [],
- adult_services: [],
- sexual_harassment: [],
- adult_links: [],
- sex_toys: [],
- },
+ categories: { sexual_terms: [], pornography: [], adult_services: [], sexual_harassment: [], adult_links: [], sex_toys: [] },
  incidents: [],
  },
  advertisement: {
  enabled: true,
  warnLimit: 3,
  highSeverityBan: true,
- categories: {
- selling: [],
- service_promotion: [],
- },
+ categories: { selling: [], service_promotion: [] },
  exemptions: [],
  incidents: [],
  },
@@ -111,13 +99,7 @@ export const DEFAULTS = Object.freeze({
  coordinated: { minUsers: 3, windowMs: 15_000, similarity: 0.8 },
  newMemberAbuse: { windowMs: 60_000, minCount: 1 },
  },
- sensitivity: {
- raidMode: {
- massJoinMultiplier: 0.5,
- messageRaidMultiplier: 0.5,
- coordinatedMultiplier: 0.5,
- },
- },
+ sensitivity: { raidMode: { massJoinMultiplier: 0.5, messageRaidMultiplier: 0.5, coordinatedMultiplier: 0.5 } },
  raidMode: {},
  incidents: [],
  },
@@ -132,30 +114,9 @@ export const DEFAULTS = Object.freeze({
  },
  rules: {
  rules: {
- R1: {
- title: 'Respect Everyone',
- description: 'Treat all members with respect. Harassment, insults, discrimination, intimidation, or abusive behavior are prohibited.',
- punishment: 'Warn',
- severity: 'medium',
- cooldown: 0,
- enabled: true,
- },
- R2: {
- title: 'Respect Staff Decisions',
- description: 'Do not interfere with moderators or administrators while they are enforcing community rules.',
- punishment: 'Warn',
- severity: 'medium',
- cooldown: 0,
- enabled: true,
- },
- R3: {
- title: 'Avoid Drama & Provocation',
- description: 'Do not intentionally create conflict, provoke arguments, spread rumors, or disrupt the community.',
- punishment: 'Warn',
- severity: 'medium',
- cooldown: 0,
- enabled: true,
- },
+ R1: { title: 'Respect Everyone', description: 'Treat all members with respect. Harassment, insults, discrimination, intimidation, or abusive behavior are prohibited.', punishment: 'Warn', severity: 'medium', cooldown: 0, enabled: true },
+ R2: { title: 'Respect Staff Decisions', description: 'Do not interfere with moderators or administrators while they are enforcing community rules.', punishment: 'Warn', severity: 'medium', cooldown: 0, enabled: true },
+ R3: { title: 'Avoid Drama & Provocation', description: 'Do not intentionally create conflict, provoke arguments, spread rumors, or disrupt the community.', punishment: 'Warn', severity: 'medium', cooldown: 0, enabled: true },
  },
  },
 });

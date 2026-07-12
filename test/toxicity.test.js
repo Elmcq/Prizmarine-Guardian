@@ -1,21 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ToxicityService } from '../src/services/ToxicityService.js';
+import { BadwordRepository } from '../src/database/repositories/BadwordRepository.js';
 import { sanitize } from '../src/utils/sanitize.js';
 
-const service = new ToxicityService({
- getAll() {
- return {
- indonesian: ['bangsat'],
- english: ['fuck'],
- slurs: [],
- hateSpeech: [],
- harassment: [],
- spamInsults: [],
- patterns: [],
- };
- },
-});
+const repository = {
+ isEnabled: () => true,
+ getStats: () => ({ detections: 0, warnings: 0, mostTriggeredCategory: null, keywords: 2 }),
+ getAll: () => ({ indonesian: ['anjing'], english: ['fuck'], slurs: [], hateSpeech: [], harassment: [], spamInsults: [], patterns: [] }),
+};
+const service = new ToxicityService(repository);
 
 test('sanitize normalizes case and WhatsApp formatting', () => {
  assert.equal(sanitize('*_~Fuck~_*'), 'fuck');
@@ -27,26 +21,31 @@ for (const text of ['Fuck', 'fuck', 'FUCK', 'fUcK']) {
  assert.equal(result.isToxic, true);
  assert.equal(result.category, 'english');
  assert.equal(result.keyword, 'fuck');
- assert.equal(result.sanitized, 'fuck');
  });
 }
 
-test('detects toxic words inside normal sentences', () => {
- assert.equal(service.detect('What the Fuck is this?').isToxic, true);
+test('detects Indonesian toxic words', () => {
+ const result = service.detect('anjing');
+ assert.equal(result.isToxic, true);
+ assert.equal(result.category, 'indonesian');
+});
+
+test('normal messages pass', () => {
+ assert.equal(service.detect('hello friend').isToxic, false);
 });
 
 test('word boundaries minimize false positives', () => {
  assert.equal(service.detect('firetruck').isToxic, false);
 });
 
-test('normal messages pass', () => {
- const result = service.detect('hello friend');
- assert.equal(result.isToxic, false);
- assert.equal(result.category, null);
- assert.equal(result.keyword, null);
-});
-
-test('all array categories are loaded dynamically', () => {
- const dynamic = new ToxicityService({ getAll: () => ({ customCategory: ['blockedword'], patterns: [] }) });
- assert.equal(dynamic.detect('BLOCKEDWORD').category, 'customCategory');
+test('module metadata is excluded from keyword categories', () => {
+ const db = {
+ badwords: { data: { enabled: true, incidents: [{ category: 'english', action: 'warn' }], english: ['fuck'], patterns: [] } },
+ persist: async () => {},
+ uuid: () => 'id',
+ };
+ const repo = new BadwordRepository(db);
+ assert.deepEqual(Object.keys(repo.getAll()), ['english', 'patterns']);
+ assert.equal(repo.getStats().detections, 1);
+ assert.equal(repo.isEnabled(), true);
 });

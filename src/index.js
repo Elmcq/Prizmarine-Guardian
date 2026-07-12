@@ -47,11 +47,13 @@ async function bootstrap() {
  logger.info(`Starting ${config.botName}...`, { node: process.version, warnLimit: config.warnLimit, banDuration: config.banDuration });
  const db = new DatabaseService();
  await db.init();
+ const badwords = new BadwordRepository(db);
  const repos = {
  warnings: new WarningRepository(db),
  bans: new BanRepository(db),
  settings: new SettingsRepository(db),
- badwords: new BadwordRepository(db),
+ badwords,
+ toxicity: badwords,
  nsfw: new NSFWRepository(db),
  advertisement: new AdvertisementRepository(db),
  raid: new RaidRepository(db),
@@ -60,7 +62,7 @@ async function bootstrap() {
  audit: new AuditRepository(db),
  };
 
- const toxicity = new ToxicityService(repos.badwords);
+ const toxicity = new ToxicityService(badwords);
  const nsfwService = new NSFWService(repos.nsfw);
  const advertisementService = new AdvertisementService(repos.advertisement);
  const raidService = new RaidService(repos.raid);
@@ -68,15 +70,7 @@ async function bootstrap() {
  const spam = new SpamService({ spamCount: config.spamCount, spamWindow: config.spamWindow, floodCount: config.floodCount });
  const rateLimiter = new RateLimiter({ cooldownMs: config.commandCooldown, limit: config.commandRateLimit, windowMs: config.commandRateWindow });
  const health = new HealthService(logger, eventBus, repos, START_TIME);
- const moderation = new ModerationService({
- config,
- logger,
- eventBus,
- warnings: repos.warnings,
- bans: repos.bans,
- settings: repos.settings,
- health,
- });
+ const moderation = new ModerationService({ config, logger, eventBus, warnings: repos.warnings, bans: repos.bans, settings: repos.settings, health });
  const ruleService = new RuleService({ repo: repos.rules, logger, eventBus });
  const permissionService = new PermissionService({ config });
  const audit = new AuditService({ repo: repos.audit, eventBus, logger }).start();
