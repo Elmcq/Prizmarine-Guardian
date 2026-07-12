@@ -11,6 +11,11 @@
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
+  <!-- Video fallback (plays if fluid-bg CDN is offline) -->
+  <video autoplay muted loop playsinline style="position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;pointer-events:none">
+    <source src="/ember-orbit.mp4" type="video/mp4" />
+  </video>
+
   <!-- Fluid animated background via fluid-bg web component -->
   <fluid-bg fixed hash="#p=0.65,2.59,5.6,0.02,1,10,0,2,31.97,0.05,1,1.7778"></fluid-bg>
   <script src="https://cdn.jsdelivr.net/npm/fluid-bg"></script>
