@@ -52,11 +52,19 @@ export function registerMessageHandler({
       let resolvedAuthorId = authorId;
       if (authorId && authorId.includes('@lid')) {
         try {
-          const contact = await client.getContactById(authorId);
-          if (contact && contact.number) {
-            resolvedAuthorId = contact.number + '@s.whatsapp.net';
+          const msgContact = await message.getContact();
+          if (msgContact && msgContact.number) {
+            resolvedAuthorId = msgContact.number + '@s.whatsapp.net';
           }
-        } catch (_) { /* ignore resolution failure */ }
+        } catch (_) {
+          try {
+            const c = await client.getContactById(authorId);
+            if (c && c.number) {
+              resolvedAuthorId = c.number + '@s.whatsapp.net';
+            }
+          } catch (_2) { /* ignore */ }
+        }
+        logger.info(`LID resolved: ${authorId} -> ${resolvedAuthorId}`);
       }
 
       const ownerCheck = isOwner(resolvedAuthorId, config.owner);
