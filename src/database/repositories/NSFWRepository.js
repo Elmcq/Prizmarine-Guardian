@@ -56,6 +56,26 @@ export class NSFWRepository {
   }
 
   /**
+   * Update a subset of module settings and persist. Used by the web dashboard.
+   * Only `warnLimit` and `highSeverityBan` are recognised; unknown or invalid
+   * values are ignored. `enabled` is handled separately by `setEnabled()`.
+   * @param {Partial<{ warnLimit: number, highSeverityBan: boolean }>} partial
+   * @returns {Promise<ReturnType<NSFWRepository['getSettings']>>}
+   */
+  async updateSettings(partial = {}) {
+    const d = this.db.data;
+    if (partial.warnLimit !== undefined) {
+      const n = Number(partial.warnLimit);
+      if (Number.isFinite(n) && n >= 1) d.warnLimit = Math.floor(n);
+    }
+    if (partial.highSeverityBan !== undefined) {
+      d.highSeverityBan = Boolean(partial.highSeverityBan);
+    }
+    await this.dbService.persist(this.db);
+    return this.getSettings();
+  }
+
+  /**
    * Record an NSFW incident.
    * @param {object} incident - { timestamp, group, user, category, severity, matched, action }
    * @returns {Promise<object>}

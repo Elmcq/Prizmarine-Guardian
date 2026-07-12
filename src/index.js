@@ -52,6 +52,7 @@ import { registerAdvertisementHandler } from './handlers/advertisementHandler.js
 import { registerRaidHandler } from './handlers/raidHandler.js';
 import { registerStickerHandler } from './handlers/stickerHandler.js';
 import { commandRegistry } from './commands/index.js';
+import { createDashboard } from './web/dashboard.js';
 
 const START_TIME = Date.now();
 
@@ -116,7 +117,7 @@ async function bootstrap() {
     authStrategy: new LocalAuth({ dataPath: '.wwebjs_auth' }),
     puppeteer: {
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'],
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage'],
     },
   });
   moderation.setClient(client);
@@ -166,6 +167,21 @@ async function bootstrap() {
   });
   scheduler.start();
 
+  // --- Web dashboard (optional, owner-authenticated) ---
+  let dashboardServer = null;
+  if (config.dashboardToken) {
+    try {
+      const app = createDashboard({ repos, services, config, logger, eventBus });
+      dashboardServer = app.listen(config.dashboardPort, config.dashboardHost, () => {
+        logger.info(`Dashboard listening on http://${config.dashboardHost}:${config.dashboardPort}`);
+      });
+    } catch (err) {
+      logger.error('Failed to start dashboard', { error: err.message });
+    }
+  } else {
+    logger.info('Dashboard disabled (set DASHBOARD_TOKEN in .env to enable).');
+  }
+
   // --- Graceful shutdown ---
   let shuttingDown = false;
   async function shutdown(signal) {
@@ -173,6 +189,9 @@ async function bootstrap() {
     shuttingDown = true;
     logger.info(`Received ${signal}. Shutting down gracefully...`);
     try {
+      if (dashboardServer) {
+        dashboardServer.close();
+      }
       scheduler.stop();
       await client.destroy();
     } catch (err) {

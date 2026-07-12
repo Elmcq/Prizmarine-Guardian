@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prizmarine Guardian — Dashboard</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <!-- Login overlay -->
+  <div id="login" class="overlay">
+    <form id="login-form" class="login-card">
+      <h1>🛡️ Prizmarine Guardian</h1>
+      <p class="muted">Enter your dashboard token to continue.</p>
+      <input id="token" type="password" placeholder="DASHBOARD_TOKEN" autocomplete="off" />
+      <button type="submit">Unlock</button>
+      <p id="login-error" class="error"></p>
+    </form>
+  </div>
+
+  <!-- Main app -->
+  <div id="app" class="hidden">
+    <header class="topbar">
+      <div>
+        <h1 id="bot-name">Prizmarine Guardian</h1>
+        <span id="bot-meta" class="muted"></span>
+      </div>
+      <button id="logout" class="ghost">Log out</button>
+    </header>
+
+    <main>
+      <section>
+        <h2>Overview</h2>
+        <div id="overview" class="cards"></div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h2>Modules</h2>
+        </div>
+        <div id="modules" class="cards"></div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h2>Rules</h2>
+          <button id="add-rule" class="primary">+ Add rule</button>
+        </div>
+        <div id="rules" class="table-wrap"></div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h2>Incidents</h2>
+          <select id="incident-module">
+            <option value="nsfw">NSFW</option>
+            <option value="advertisement">Advertisement</option>
+            <option value="raid">Raid</option>
+            <option value="sticker">Sticker</option>
+          </select>
+          <button id="refresh-incidents" class="ghost">Refresh</button>
+        </div>
+        <div id="incidents" class="table-wrap"></div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h2>Bans</h2>
+          <button id="refresh-bans" class="ghost">Refresh</button>
+        </div>
+        <div id="bans" class="table-wrap"></div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h2>Warnings</h2>
+          <button id="refresh-warnings" class="ghost">Refresh</button>
+        </div>
+        <div id="warnings" class="table-wrap"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Rule editor modal -->
+  <div id="rule-modal" class="overlay hidden">
+    <form id="rule-form" class="modal">
+      <h2 id="rule-modal-title">Add rule</h2>
+      <input type="hidden" id="rule-id-old" />
+      <label>ID <input id="rule-id" placeholder="R9" required /></label>
+      <label>Title <input id="rule-title" required /></label>
+      <label>Description <textarea id="rule-description" rows="3" required></textarea></label>
+      <label>Punishment
+        <select id="rule-punishment">
+          <option>Warn</option>
+          <option>Kick</option>
+          <option>TempBan</option>
+          <option>Ban</option>
+        </select>
+      </label>
+      <div class="modal-actions">
+        <button type="button" id="rule-cancel" class="ghost">Cancel</button>
+        <button type="submit" class="primary">Save</button>
+      </div>
+      <p id="rule-error" class="error"></p>
+    </form>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

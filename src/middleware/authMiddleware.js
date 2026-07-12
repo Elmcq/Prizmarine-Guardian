@@ -5,17 +5,38 @@
  */
 
 /**
- * Whether the author is the configured owner.
- * @param {string} authorId
- * @param {string} ownerId - normalised owner id (includes @c.us).
- * @returns {boolean}
+ * Reduce a WhatsApp id to its bare phone-number digits, so ids that refer to
+ * the same account compare equal regardless of suffix:
+ *   "6281234@s.whatsapp.net", "6281234:12@s.whatsapp.net", "6281234@c.us"
+ * all reduce to "6281234". Group ids ("…@g.us") reduce to themselves so they
+ * never accidentally match a user id.
+ * @param {string} id
+ * @returns {string}
  */
-export function isOwner(authorId, ownerId) {
-  return Boolean(authorId && ownerId && authorId === ownerId);
+function canonicalUserId(id) {
+  if (!id || typeof id !== 'string') return '';
+  // Group chats and broadcast lists must not collapse to a phone number.
+  if (id.includes('@g.us') || id.includes('@broadcast')) return id;
+  const at = id.indexOf('@');
+  const base = at === -1 ? id : id.slice(0, at);
+  // Strip the ":<device>" device suffix if present ("6281234:0" -> "6281234").
+  const colon = base.indexOf(':');
+  const digits = colon === -1 ? base : base.slice(0, colon);
+  return digits.replace(/\D/g, '');
 }
 
 /**
- * Whether the author is an admin of the given group chat.
+ * Whether the author is the configured owner.
+ * @param {string} authorId
+ * @param {string} ownerId - normalised owner id (digits, @c.us or @s.whatsapp.net).
+ * @returns {boolean}
+ */
+export function isOwner(authorId, ownerId) {
+  return Boolean(authorId && ownerId && canonicalUserId(authorId) === canonicalUserId(ownerId));
+}
+
+/**
+ * Whether an author is an admin of the given group chat.
  * @param {import('whatsapp-web.js').Client} client
  * @param {object} chat - whatsapp-web.js Chat (group).
  * @param {string} userId
@@ -24,8 +45,10 @@ export function isOwner(authorId, ownerId) {
 export async function isGroupAdmin(client, chat, userId) {
   if (!chat || !chat.isGroup) return false;
   const participants = chat.participants || [];
+  const target = canonicalUserId(userId);
+  if (!target) return false;
   const participant = participants.find(
-    (p) => (p.id?._serialized || p.id) === userId,
+    (p) => canonicalUserId(p.id?._serialized || p.id) === target,
   );
   return Boolean(participant && (participant.isAdmin || participant.isSuperAdmin));
 }

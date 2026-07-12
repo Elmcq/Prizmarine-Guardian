@@ -46,6 +46,12 @@ export const config = Object.freeze({
   commandRateLimit: parsePositiveInt(process.env.COMMAND_RATE_LIMIT, LIMITS.COMMAND_RATE_LIMIT),
   commandRateWindow: parsePositiveInt(process.env.COMMAND_RATE_WINDOW_MS, LIMITS.COMMAND_RATE_WINDOW_MS),
   backupIntervalHours: parsePositiveInt(process.env.BACKUP_INTERVAL_HOURS, LIMITS.BACKUP_INTERVAL_HOURS),
+
+  // Web dashboard (optional). The dashboard only starts when DASHBOARD_TOKEN
+  // is set to a non-empty string; otherwise the bot runs without it.
+  dashboardPort: parsePositiveInt(process.env.DASHBOARD_PORT, 3000),
+  dashboardHost: process.env.DASHBOARD_HOST || '0.0.0.0',
+  dashboardToken: process.env.DASHBOARD_TOKEN || '',
 });
 
 // Fail fast if a misconfiguration would silently break moderation.

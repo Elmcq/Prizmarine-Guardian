@@ -62,6 +62,26 @@ export class StickerRepository {
   }
 
   /**
+   * Update a subset of module settings and persist. Used by the web dashboard.
+   * Only `maxStickers`, `timeWindow`, `duplicateLimit` and `warnLimit` are
+   * recognised; unknown or invalid values are ignored. `enabled` is handled
+   * separately by `setEnabled()`.
+   * @param {Partial<{ maxStickers: number, timeWindow: number, duplicateLimit: number, warnLimit: number }>} partial
+   * @returns {Promise<ReturnType<StickerRepository['getSettings']>>}
+   */
+  async updateSettings(partial = {}) {
+    const d = this.db.data;
+    for (const key of ['maxStickers', 'timeWindow', 'duplicateLimit', 'warnLimit']) {
+      if (partial[key] !== undefined) {
+        const n = Number(partial[key]);
+        if (Number.isFinite(n) && n >= 1) d[key] = Math.floor(n);
+      }
+    }
+    await this.dbService.persist(this.db);
+    return this.getSettings();
+  }
+
+  /**
    * Record a sticker incident.
    * @param {object} incident - { timestamp, group, user, type, stickerKey?, action? }
    * @returns {Promise<object>}

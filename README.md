@@ -550,6 +550,76 @@ falls back to the configured `BAN_DURATION`.
 
 ---
 
+## 🌐 Web Dashboard
+
+A built-in, owner-authenticated web dashboard runs **in the same process as the
+bot** (Express + a small vanilla-JS UI). It shows live stats, manages rules
+(CRUD), and toggles/edits the four moderation modules — reusing the bot's own
+repositories and services, so changes take effect immediately.
+
+### Enable it
+The dashboard only starts when `DASHBOARD_TOKEN` is set. Generate a strong token:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"
+```
+
+Then in `.env`:
+
+```env
+DASHBOARD_PORT=3000
+DASHBOARD_HOST=0.0.0.0
+DASHBOARD_TOKEN=<the long random string from above>
+```
+
+Restart the bot. You should see:
+
+```
+Dashboard listening on http://0.0.0.0:3000
+```
+
+Open `http://<your-server>:3000`, enter the token once, and you're in. The token
+is stored in an HttpOnly session cookie (24h). Log out clears it.
+
+### What you can do
+- **Overview** — uptime, active bans, total warnings, messages seen, memory, per-module stats.
+- **Modules** — turn NSFW / Advertisement / Raid / Sticker on or off and edit their limits (warn limit, Raid Mode duration, sticker thresholds, …). Saving reloads the live service instantly.
+- **Rules** — create, edit, and delete rules (same validation as `!addrule`/`!editrule`/`!deleterule`).
+- **Incidents / Bans / Warnings** — read-only recent-activity tables, filterable by module.
+
+### Security
+- The dashboard is **single-owner**: anyone with `DASHBOARD_TOKEN` gets full control. Keep it secret.
+- The session cookie is **not** marked `Secure`, so it works over plain HTTP (SSH tunnel / LAN) but travels unencrypted. For any internet-facing deployment, put it behind an **HTTPS reverse proxy (nginx)** and firewall the port, e.g.:
+
+  ```nginx
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+  ```
+
+- Sessions are in-memory and cleared on restart (re-login required). This is fine for single-owner use.
+- If `DASHBOARD_TOKEN` is empty, the dashboard stays disabled and the bot logs `Dashboard disabled`.
+
+### Endpoints (JSON, auth required except login)
+| Method | Path | Purpose |
+| ------ | ---- | ------- |
+| POST | `/api/auth/login` | unlock with `{ "token": "…" }` |
+| POST | `/api/auth/logout` | end session |
+| GET | `/api/overview` | aggregated stats |
+| GET | `/api/modules` | list modules |
+| PUT | `/api/modules/:key` | toggle `enabled` + edit settings |
+| GET | `/api/rules` | list rules |
+| POST | `/api/rules` | add rule |
+| PUT | `/api/rules/:id` | edit a rule field |
+| DELETE | `/api/rules/:id` | delete rule |
+| GET | `/api/data/incidents?module=&limit=` | recent incidents |
+| GET | `/api/data/bans` | bans |
+| GET | `/api/data/warnings` | warnings |
+
+---
+
 ## 📁 Folder structure
 
 ```
@@ -561,11 +631,13 @@ prizmarine-anti-toxic/
 │   ├── commands/           # One module per command + the registry
 │   ├── database/           # DatabaseService (lowdb wrapper) + repositories
 │   ├── services/           # Toxicity, Moderation, Spam, RateLimiter, Backup, Health, Scheduler
+│   ├── web/                # Optional Express dashboard (auth, schemas, routes, factory)
 │   ├── middleware/         # auth, rate-limit, cooldown
 │   ├── utils/              # sanitize, time, mentions, formatter
 │   ├── logger/             # Winston configuration
 │   └── events/             # EventBus (decoupled domain events)
 ├── data/                   # warnings.json, bans.json, settings.json, badwords.json, nsfw.json, advertisement.json, raid.json, sticker.json, rules.json, backups/
+├── public/                 # Dashboard static UI (index.html, styles.css, app.js)
 ├── logs/                   # Winston output (combined.log, error.log)
 ├── .wwebjs_auth/           # Cached WhatsApp session (created on first login)
 ├── .env                    # Your configuration

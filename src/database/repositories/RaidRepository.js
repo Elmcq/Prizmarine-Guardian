@@ -89,6 +89,30 @@ export class RaidRepository {
   }
 
   /**
+   * Update a subset of module settings and persist. Used by the web dashboard.
+   * Only `autoRaidMode`, `notifyAdmins` and `raidModeDurationMs` are
+   * recognised; unknown or invalid values are ignored. `enabled` is handled
+   * separately by `setEnabled()`.
+   * @param {Partial<{ autoRaidMode: boolean, notifyAdmins: boolean, raidModeDurationMs: number }>} partial
+   * @returns {Promise<ReturnType<RaidRepository['getSettings']>>}
+   */
+  async updateSettings(partial = {}) {
+    const d = this.db.data;
+    if (partial.autoRaidMode !== undefined) {
+      d.autoRaidMode = Boolean(partial.autoRaidMode);
+    }
+    if (partial.notifyAdmins !== undefined) {
+      d.notifyAdmins = Boolean(partial.notifyAdmins);
+    }
+    if (partial.raidModeDurationMs !== undefined) {
+      const n = Number(partial.raidModeDurationMs);
+      if (Number.isFinite(n) && n >= 1000) d.raidModeDurationMs = Math.floor(n);
+    }
+    await this.dbService.persist(this.db);
+    return this.getSettings();
+  }
+
+  /**
    * Record a raid incident.
    * @param {object} incident - { timestamp, group, type, users? }
    * @returns {Promise<object>}
