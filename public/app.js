@@ -100,9 +100,8 @@ $('#login-form').addEventListener('submit', async (e) => {
   }
 });
 
-$('#sidebar-logout').addEventListener('click', async (e) => {
+$('#topbar-logout').addEventListener('click', async (e) => {
   e.preventDefault();
-  closeSidebar();
   try { await api('/api/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
   showLogin();
 });
@@ -404,54 +403,6 @@ setInterval(() => {
     loadModules().catch(() => {});
   }
 }, 20000);
-
-/* ---------------- Sidebar navigation ---------------- */
-const sections = ['overview','modules','rules','incidents','bans','warnings'];
-const navLinks = document.querySelectorAll('.sidebar-link[data-section]');
-
-function setActiveNav(id) {
-  navLinks.forEach((l) => {
-    l.classList.toggle('active', l.dataset.section === id);
-  });
-}
-
-navLinks.forEach((link) => {
-  link.addEventListener('click', (e) => {
-    e.preventDefault();
-    const target = document.getElementById(link.dataset.section);
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setActiveNav(link.dataset.section);
-    closeSidebar();
-  });
-});
-
-window.addEventListener('scroll', () => {
-  let current = sections[0];
-  for (const id of sections) {
-    const el = document.getElementById(id);
-    if (el && el.getBoundingClientRect().top <= 80) current = id;
-  }
-  setActiveNav(current);
-}, { passive: true });
-
-/* ---------------- Hamburger / mobile sidebar ---------------- */
-const hamburger = $('#hamburger');
-const sidebar = $('#sidebar');
-const sidebarOverlay = $('#sidebar-overlay');
-
-function openSidebar() {
-  sidebar.classList.add('open');
-  sidebarOverlay.classList.add('open');
-}
-function closeSidebar() {
-  sidebar.classList.remove('open');
-  sidebarOverlay.classList.remove('open');
-}
-
-if (hamburger) hamburger.addEventListener('click', () => {
-  sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
-});
-if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
 
 // Initial auth check
 boot();
