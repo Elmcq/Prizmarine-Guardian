@@ -1,28 +1,50 @@
 'use strict';
 
-import { animateSlotText, buildSlotText, clearSlotText } from 'https://cdn.jsdelivr.net/npm/slot-text@0.3.1/+esm';
-
 const $ = (sel) => document.querySelector(sel);
 
-const slotInstances = new Map();
+/* ---------------- Decrypt text effect ---------------- */
+const CHARS = '█▓▒░0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&*';
 
-function roll(el, text, opts = {}) {
+function decryptText(el, finalText, opts = {}) {
   if (!el) return;
-  if (slotInstances.has(el)) {
-    slotInstances.get(el)(text);
-    return;
+  const { speed = 30, stagger = 40, color = '#4f9dff' } = opts;
+  const text = String(finalText);
+  el.innerHTML = '';
+  const spans = [];
+
+  for (let i = 0; i < text.length; i++) {
+    const span = document.createElement('span');
+    span.className = 'decrypt-char scrambling';
+    span.textContent = CHARS[Math.floor(Math.random() * CHARS.length)];
+    span.style.color = color;
+    el.appendChild(span);
+    spans.push({ el: span, final: text[i], delay: i * stagger });
   }
-  buildSlotText(el, text);
-  const api = { element: el, value: text, set(newText, o) { animateSlotText(el, newText, { interrupt: true, ...opts, ...o }); } };
-  slotInstances.set(el, (newText) => api.set(newText));
+
+  spans.forEach(({ el: span, final, delay }) => {
+    const cycles = 3 + Math.floor(Math.random() * 4);
+    let count = 0;
+    const interval = setInterval(() => {
+      span.textContent = CHARS[Math.floor(Math.random() * CHARS.length)];
+      count++;
+      if (count >= cycles) {
+        clearInterval(interval);
+        span.textContent = final;
+        span.classList.remove('scrambling');
+        span.classList.add('resolved');
+        span.style.color = '';
+      }
+    }, speed);
+    setTimeout(() => {}, delay);
+  });
 }
 
-function rollToast(el, text) {
+function decryptToast(el, text) {
   if (!el) return;
-  buildSlotText(el, text);
-  animateSlotText(el, text, { stagger: 30, duration: 200 });
+  decryptText(el, text, { speed: 20, stagger: 25, color: '#4f9dff' });
 }
 
+/* ---------------- API ---------------- */
 async function api(path, opts = {}) {
   const res = await fetch(path, {
     credentials: 'same-origin',
@@ -41,15 +63,17 @@ async function api(path, opts = {}) {
   return body;
 }
 
+/* ---------------- Toast ---------------- */
 let toastTimer = null;
 function toast(msg) {
   const t = $('#toast');
-  rollToast(t, msg);
+  decryptToast(t, msg);
   t.classList.remove('hidden');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.add('hidden'), 2600);
 }
 
+/* ---------------- Auth UI ---------------- */
 function showLogin() {
   $('#login').classList.remove('hidden');
   $('#app').classList.add('hidden');
@@ -72,8 +96,7 @@ $('#login-form').addEventListener('submit', async (e) => {
     $('#token').value = '';
     await boot();
   } catch (err) {
-    const errEl = $('#login-error');
-    errEl.textContent = err.message;
+    $('#login-error').textContent = err.message;
   }
 });
 
@@ -84,7 +107,7 @@ $('#sidebar-logout').addEventListener('click', async (e) => {
   showLogin();
 });
 
-/* ---------------- Boot / loaders ---------------- */
+/* ---------------- Boot ---------------- */
 async function boot() {
   try {
     const me = await api('/api/auth/me');
@@ -99,6 +122,7 @@ async function boot() {
   loadWarnings();
 }
 
+/* ---------------- Overview ---------------- */
 async function loadOverview() {
   const d = await api('/api/overview');
   const mem = d.health.memory;
@@ -117,21 +141,26 @@ async function loadOverview() {
   if (existing.length === 0) {
     container.innerHTML = cards.map((c) => `
       <div class="card">
-        <div class="stat" data-slot></div>
-        <div class="stat-label" data-slot-label>${escapeHtml(c.label)}</div>
+        <div class="stat" data-decrypt></div>
+        <div class="stat-label">${escapeHtml(c.label)}</div>
       </div>`).join('');
     container.querySelectorAll('.card').forEach((card, i) => {
-      roll(card.querySelector('[data-slot]'), String(cards[i].value), { stagger: 20, duration: 250 });
+      decryptText(card.querySelector('[data-decrypt]'), String(cards[i].value), {
+        speed: 25,
+        stagger: 50 + i * 15,
+      });
     });
   } else {
     existing.forEach((card, i) => {
       if (cards[i]) {
-        roll(card.querySelector('.stat'), String(cards[i].value));
+        const statEl = card.querySelector('.stat');
+        decryptText(statEl, String(cards[i].value), { speed: 20, stagger: 30 });
       }
     });
   }
 }
 
+/* ---------------- Modules ---------------- */
 async function loadModules() {
   const list = await api('/api/modules');
   const container = $('#modules-cards');
@@ -146,7 +175,7 @@ async function loadModules() {
     return `
     <div class="card" data-key="${m.key}">
       <div class="module-head">
-        <h3 data-slot>${escapeHtml(m.label)}</h3>
+        <h3 data-decrypt>${escapeHtml(m.label)}</h3>
         <label class="switch">
           <input type="checkbox" class="mod-enabled" ${m.enabled ? 'checked' : ''} />
           <span class="slider"></span>
@@ -157,13 +186,13 @@ async function loadModules() {
     </div>`;
   }).join('');
 
-  container.querySelectorAll('.card').forEach((card) => {
+  container.querySelectorAll('.card').forEach((card, i) => {
     card.querySelector('.mod-save').addEventListener('click', () => saveModule(card));
-    const h3 = card.querySelector('[data-slot]');
+    const h3 = card.querySelector('[data-decrypt]');
     if (h3) {
       const origText = h3.textContent;
-      clearSlotText(h3, origText);
-      roll(h3, origText, { stagger: 30, duration: 220 });
+      h3.textContent = '';
+      decryptText(h3, origText, { speed: 20, stagger: 35 + i * 10 });
     }
   });
 }
@@ -368,7 +397,7 @@ function fmtTime(ts) {
   return Number.isNaN(d.getTime()) ? String(ts) : d.toLocaleString();
 }
 
-// Auto-refresh overview + modules so stats stay current.
+// Auto-refresh overview + modules
 setInterval(() => {
   if (!$('#app').classList.contains('hidden')) {
     loadOverview().catch(() => {});
