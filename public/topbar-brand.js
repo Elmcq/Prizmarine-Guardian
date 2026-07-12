@@ -3,7 +3,7 @@
 (() => {
  const brand = document.querySelector('#topbar-brand');
  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
- const messages = ['🛡️ Prizmarine Guardian', "Don't forget us", 'Your group, protected', 'Security monitoring active'];
+ const messages = ['🛡️ Prizmarine Guardian', "Don't forget us", 'Your group, protected', 'Security monitoring active', 'By Elmcqq'];
  let index = 0;
  let timer = null;
  const schedule = () => {
