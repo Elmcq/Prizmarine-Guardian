@@ -11,10 +11,9 @@
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <!-- Fluid animated background (Option A) + static fallback (Option B) -->
-  <div style="position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none">
-    <iframe src="https://fluid.krackeddevs.com/#p=0.65,2.59,5.6,0.02,1,10,0,2,31.97,0.05,1,1.7778,0,1" title="Fluid background" style="width:100%;height:100%;border:0;display:block"></iframe>
-  </div>
+  <!-- Fluid animated background via fluid-bg web component -->
+  <fluid-bg fixed hash="#p=0.65,2.59,5.6,0.02,1,10,0,2,31.97,0.05,1,1.7778"></fluid-bg>
+  <script src="https://cdn.jsdelivr.net/npm/fluid-bg"></script>
 
   <!-- Login overlay -->
   <div id="login" class="overlay">
