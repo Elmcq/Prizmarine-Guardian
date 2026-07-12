@@ -3,7 +3,10 @@ export const MODULE_KEYS = ['toxicity', 'nsfw', 'advertisement', 'raid', 'sticke
 export const MODULE_SCHEMAS = {
  toxicity: {
  label: 'Anti Toxic',
- fields: [],
+ fields: [
+  { key: 'warnLimit', type: 'int', min: 1, label: 'Warn limit' },
+  { key: 'highSeverityBan', type: 'bool', label: 'Ban on high severity' },
+ ],
  },
  nsfw: {
  label: 'Anti NSFW',
