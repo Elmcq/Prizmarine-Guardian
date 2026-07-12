@@ -91,6 +91,8 @@ npm install
 # 2. Configure environment
 cp .env.example .env
 #   edit .env and set at least OWNER to your WhatsApp number (digits only, no "+")
+#   if the bot doesn't recognize you as owner in groups, also set OWNER_LID
+#   (check pm2 logs for "LID resolved:" to find your LID)
 ```
 
 ---
@@ -115,6 +117,7 @@ scan once.
 | `BOT_NAME`      | `Prizmarine Guardian` | Display name used in log lines & messages.              |
 | `PREFIX`        | `!`                  | Command prefix.                                          |
 | `OWNER`         | _(required)_         | Bot owner number, digits only (e.g. `6281234567890`). Immune to moderation; may run every command. |
+| `OWNER_LID`     | _(optional)_         | WhatsApp LID for the owner (e.g. `35455038935243@lid`). Required when group messages use LID privacy instead of the phone number. Check bot logs (`LID resolved:`) to find your LID. |
 | `WARN_LIMIT`    | `3`                  | Warnings before an automatic ban.                       |
 | `BAN_DURATION`  | `86400000`           | Ban length in milliseconds (86400000 = 24 hours).       |
 | `LOG_LEVEL`     | `info`               | Winston level: `error` \| `warn` \| `info` \| `debug`.   |
