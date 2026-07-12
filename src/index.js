@@ -83,23 +83,9 @@ async function bootstrap() {
  });
  moderation.setClient(client);
  permissionService.setClient(client);
+ const contactResolver = new ContactResolver(client, logger, repos.settings);
 
- const contactResolver = new ContactResolver(client, logger);
-
- const services = {
- toxicity,
- nsfw: nsfwService,
- advertisement: advertisementService,
- raid: raidService,
- sticker: stickerService,
- spam,
- moderation,
- health,
- backup,
- rule: ruleService,
- permission: permissionService,
- audit,
- };
+ const services = { toxicity, nsfw: nsfwService, advertisement: advertisementService, raid: raidService, sticker: stickerService, spam, moderation, health, backup, rule: ruleService, permission: permissionService, audit };
 
  registerMessageHandler({ client, repos, services, config, logger, eventBus, rateLimiter, commandRegistry, contactResolver });
  registerNSFWHandler({ client, repos, services, config, logger, eventBus, nsfwService });
@@ -116,27 +102,14 @@ async function bootstrap() {
  client.on('authenticated', () => logger.info('Session authenticated.'));
  client.on('auth_failure', (msg) => logger.error('Auth failure', { msg }));
 
- const scheduler = new SchedulerService({
- client,
- repos,
- moderation,
- backup,
- health,
- config,
- logger,
- eventBus,
- raid: { service: raidService, repo: repos.raid },
- sticker: { service: stickerService, repo: repos.sticker },
- });
+ const scheduler = new SchedulerService({ client, repos, moderation, backup, health, config, logger, eventBus, raid: { service: raidService, repo: repos.raid }, sticker: { service: stickerService, repo: repos.sticker } });
  scheduler.start();
 
  let dashboardServer = null;
  if (config.dashboardToken) {
  try {
  const app = createDashboard({ repos, services, config, logger, eventBus, contactResolver });
- dashboardServer = app.listen(config.dashboardPort, config.dashboardHost, () => {
- logger.info(`Dashboard listening on http://${config.dashboardHost}:${config.dashboardPort}`);
- });
+ dashboardServer = app.listen(config.dashboardPort, config.dashboardHost, () => logger.info(`Dashboard listening on http://${config.dashboardHost}:${config.dashboardPort}`));
  } catch (err) {
  logger.error('Failed to start dashboard', { error: err.message });
  }

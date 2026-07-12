@@ -21,6 +21,30 @@ export class SettingsRepository {
  return this.db.data.groupInviteLinks || {};
  }
 
+ getContactProfiles() {
+ return this.db.data.contactProfiles || {};
+ }
+
+ getContactProfile(id) {
+ return this.getContactProfiles()[id] || null;
+ }
+
+ async setContactProfile(id, profile) {
+ if (!id || !profile?.name) return null;
+ if (!this.db.data.contactProfiles) this.db.data.contactProfiles = {};
+ const current = this.db.data.contactProfiles[id];
+ const next = {
+ name: String(profile.name).trim(),
+ type: profile.type === 'group' ? 'group' : 'contact',
+ updatedAt: Number(profile.updatedAt) || Date.now(),
+ };
+ if (!next.name) return null;
+ if (current?.name === next.name && current?.type === next.type) return current;
+ this.db.data.contactProfiles[id] = next;
+ await this.dbService.persist(this.db);
+ return next;
+ }
+
  async incMessagesSeen(n = 1, flushEvery = 25) {
  this.db.data.messagesSeen = (this.db.data.messagesSeen || 0) + n;
  if (this.db.data.messagesSeen % flushEvery === 0) await this.dbService.persist(this.db);
@@ -44,10 +68,7 @@ export class SettingsRepository {
  if (stored?.levels?.length) return structuredClone(stored);
  const limit = Math.max(1, Number(fallbackLimit) || 3);
  if (limit === 1) {
- return {
- enabled: true,
- levels: [{ threshold: 1, severity: 'critical', action: 'tempban', durationMs: fallbackDurationMs }],
- };
+ return { enabled: true, levels: [{ threshold: 1, severity: 'critical', action: 'tempban', durationMs: fallbackDurationMs }] };
  }
  const levels = [{ threshold: 1, severity: 'normal', action: 'warn' }];
  if (limit > 2) levels.push({ threshold: limit - 1, severity: 'high', action: 'warn' });
@@ -56,9 +77,7 @@ export class SettingsRepository {
  }
 
  async setWarningEscalation(input) {
- if (!input || !Array.isArray(input.levels) || input.levels.length === 0) {
- throw new Error('At least one escalation level is required.');
- }
+ if (!input || !Array.isArray(input.levels) || input.levels.length === 0) throw new Error('At least one escalation level is required.');
  const levels = input.levels.map((level) => {
  const threshold = Number(level.threshold);
  const action = String(level.action || '').toLowerCase();
@@ -74,9 +93,7 @@ export class SettingsRepository {
  }
  return normalized;
  }).sort((a, b) => a.threshold - b.threshold);
- if (new Set(levels.map((level) => level.threshold)).size !== levels.length) {
- throw new Error('Escalation thresholds must be unique.');
- }
+ if (new Set(levels.map((level) => level.threshold)).size !== levels.length) throw new Error('Escalation thresholds must be unique.');
  this.db.data.warningEscalation = { enabled: input.enabled !== false, levels };
  await this.dbService.persist(this.db);
  return structuredClone(this.db.data.warningEscalation);

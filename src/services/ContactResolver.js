@@ -1,91 +1,96 @@
-/**
- * @file ContactResolver — caches WhatsApp contact names so the dashboard
- * can display human-readable names instead of raw phone-number IDs.
- *
- * The cache is populated passively (from incoming messages) and on-demand
- * (when the dashboard requests a resolve). Stale entries are re-fetched
- * periodically.
- */
-
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const CACHE_TTL_MS = 60 * 60 * 1000;
 
 export class ContactResolver {
- /**
-  * @param {import('whatsapp-web.js').Client} client
-  * @param {import('winston').Logger} logger
-  */
- constructor(client, logger) {
-  /** @type {import('whatsapp-web.js').Client|null} */
-  this.client = client;
-  this.logger = logger;
-  /** @type {Map<string, { name: string, ts: number }>} */
-  this.cache = new Map();
+ constructor(client, logger, settings = null) {
+ this.client = client;
+ this.logger = logger;
+ this.settings = settings;
+ this.cache = new Map();
+ for (const [id, profile] of Object.entries(settings?.getContactProfiles?.() || {})) {
+ if (profile?.name) this.cache.set(id, { name: profile.name, type: profile.type, ts: profile.updatedAt || 0 });
+ }
  }
 
- /** Inject the WhatsApp client (available after construction). */
  setClient(client) {
-  this.client = client;
+ this.client = client;
  }
 
- /**
-  * Resolve a single WhatsApp ID to a display name.
-  * Returns the cached name if fresh, otherwise fetches from WhatsApp.
-  * @param {string} id
-  * @returns {Promise<string>}
-  */
  async resolve(id) {
-  if (!id) return '';
-  const cached = this.cache.get(id);
-  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) return cached.name;
-
-  const name = await this._fetchName(id);
-  this.cache.set(id, { name, ts: Date.now() });
-  return name;
+ if (!id) return '';
+ if (!this._looksLikeWhatsAppId(id)) return String(id);
+ const cached = this.cache.get(id);
+ if (cached && Date.now() - cached.ts < CACHE_TTL_MS) return cached.name;
+ const profile = await this._fetchProfile(id);
+ await this.cacheProfile(id, profile.name, profile.type);
+ return profile.name;
  }
 
- /**
-  * Resolve multiple IDs in parallel.
-  * @param {string[]} ids
-  * @returns {Promise<Map<string, string>>} id -> name
-  */
  async resolveMany(ids) {
-  const unique = [...new Set(ids.filter(Boolean))];
-  const results = new Map();
-  await Promise.all(
-   unique.map(async (id) => {
-    results.set(id, await this.resolve(id));
-   }),
-  );
-  return results;
+ const unique = [...new Set(ids.filter(Boolean))];
+ const values = await Promise.all(unique.map((id) => this.resolve(id)));
+ return new Map(unique.map((id, index) => [id, values[index]]));
  }
 
- /**
-  * Cache a name passively (e.g. from an incoming message).
-  * @param {string} id
-  * @param {string} name
-  */
- cacheName(id, name) {
-  if (id && name) this.cache.set(id, { name, ts: Date.now() });
+ async cacheProfile(id, name, type = 'contact') {
+ const clean = String(name || '').trim();
+ if (!id || !clean) return;
+ const profile = { name: clean, type, ts: Date.now() };
+ this.cache.set(id, profile);
+ try {
+ await this.settings?.setContactProfile?.(id, { name: clean, type, updatedAt: profile.ts });
+ } catch (err) {
+ this.logger?.debug?.('Could not persist contact profile', { id, error: err.message });
+ }
  }
 
- /** @private */
- async _fetchName(id) {
-  if (!this.client) return this._idToDisplay(id);
-  try {
-   const waId = id.includes('@') ? id : `${id}@c.us`;
-   const contact = await this.client.getContactById(waId);
-   const name = contact.pushname || contact.name || contact.number || this._idToDisplay(id);
-   return name;
-  } catch {
-   return this._idToDisplay(id);
-  }
+ cacheName(id, name, type = 'contact') {
+ this.cacheProfile(id, name, type).catch(() => {});
  }
 
- /** Fallback: turn a raw ID into a short display string. */
- _idToDisplay(id) {
-  if (!id) return '';
-  const num = id.replace(/@.*$/, '');
-  return num.length > 8 ? `${num.slice(0, 4)}…${num.slice(-4)}` : num;
+ async _fetchProfile(id) {
+ if (!this.client) return { name: this.formatFallback(id), type: this._isGroup(id) ? 'group' : 'contact' };
+ try {
+ if (this._isGroup(id)) {
+ const chat = await this.client.getChatById(id);
+ return { name: chat?.name || this.formatFallback(id), type: 'group' };
+ }
+ const waId = id.includes('@') ? id : `${id}@c.us`;
+ const contact = await this.client.getContactById(waId);
+ return {
+ name: contact?.pushname || contact?.name || contact?.shortName || this.formatFallback(contact?.number || id),
+ type: 'contact',
+ };
+ } catch {
+ const stored = this.settings?.getContactProfile?.(id);
+ return { name: stored?.name || this.formatFallback(id), type: stored?.type || (this._isGroup(id) ? 'group' : 'contact') };
+ }
+ }
+
+ formatFallback(id) {
+ if (!id) return '';
+ const raw = String(id).replace(/@.*$/, '').replace(/:\d+$/, '');
+ if (this._isGroup(id)) return `Group ${raw.slice(-6)}`;
+ if (!/^\d+$/.test(raw)) return raw;
+ const local = raw.startsWith('62') ? `0${raw.slice(2)}` : raw;
+ const groups = [];
+ let cursor = 0;
+ const sizes = local.length > 10 ? [4, 4] : [4, 3];
+ for (const size of sizes) {
+ if (cursor >= local.length) break;
+ groups.push(local.slice(cursor, cursor + size));
+ cursor += size;
+ }
+ if (cursor < local.length) groups.push(local.slice(cursor));
+ return groups.join(' ');
+ }
+
+ _isGroup(id) {
+ return String(id).includes('@g.us');
+ }
+
+ _looksLikeWhatsAppId(id) {
+ const value = String(id);
+ return value.includes('@') || /^\d{7,}$/.test(value);
  }
 }
 

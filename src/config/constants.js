@@ -60,7 +60,7 @@ export const RULE_SEVERITIES = Object.freeze(['low', 'medium', 'high', 'critical
 export const DEFAULTS = Object.freeze({
  warnings: { records: [] },
  bans: { records: [] },
- settings: { groupInviteLinks: {}, messagesSeen: 0, blockedMessages: 0 },
+ settings: { groupInviteLinks: {}, contactProfiles: {}, messagesSeen: 0, blockedMessages: 0 },
  audit: { records: [] },
  badwords: {
  enabled: true,

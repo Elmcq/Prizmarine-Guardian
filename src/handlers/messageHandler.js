@@ -6,18 +6,23 @@ import { isOnCooldown, markCooldown } from '../middleware/cooldownMiddleware.js'
 
 export function registerMessageHandler({ client, repos, services, config, logger, eventBus, rateLimiter, commandRegistry, contactResolver }) {
  client.on('message', async (message) => {
-  try {
-   const chat = await message.getChat();
-   const isGroup = Boolean(chat.isGroup);
-   const authorId = message.author || message.from;
-   const groupId = isGroup ? chat.id._serialized : null;
-
-   if (contactResolver && authorId) {
-    try {
-     const contact = await client.getContactById(authorId);
-     if (contact.pushname || contact.name) contactResolver.cacheName(authorId, contact.pushname || contact.name);
-    } catch {}
-   }
+ try {
+ const chat = await message.getChat();
+ const isGroup = Boolean(chat.isGroup);
+ const authorId = message.author || message.from;
+ const groupId = isGroup ? chat.id._serialized : null;
+ if (contactResolver) {
+ try {
+ const contact = await message.getContact();
+ const contactId = contact?.id?._serialized || authorId;
+ const contactName = contact?.pushname || contact?.name || contact?.shortName;
+ if (contactId && contactName) await contactResolver.cacheProfile(contactId, contactName, 'contact');
+ if (authorId && contactName && contactId !== authorId) await contactResolver.cacheProfile(authorId, contactName, 'contact');
+ if (groupId && chat?.name) await contactResolver.cacheProfile(groupId, chat.name, 'group');
+ } catch (err) {
+ logger.debug('Contact profile capture failed', { authorId, error: err.message });
+ }
+ }
  await repos.settings.incMessagesSeen();
  const ownerCheck = isOwner(authorId, config.owner)
  || (config.ownerLid && authorId === config.ownerLid)
@@ -58,30 +63,9 @@ export function registerMessageHandler({ client, repos, services, config, logger
  if (isGroup && !message.fromMe && services.toxicity.isEnabled()) {
  const detection = services.toxicity.detect(body);
  if (detection.isToxic) {
- logger.info('AntiToxic match', {
- enabled: true,
- sanitized: detection.sanitized,
- category: detection.category,
- keyword: detection.keyword,
- groupId,
- authorId,
- });
- const incident = await repos.badwords.addIncident({
- group: groupId,
- user: authorId,
- category: detection.category,
- matched: detection.matched,
- keyword: detection.keyword,
- action: 'warn',
- });
- eventBus.emit(EVENTS.TOXICITY_DETECTED, {
- groupId,
- targetId: authorId,
- category: detection.category,
- keyword: detection.keyword,
- matched: detection.matched,
- incidentId: incident.id,
- });
+ logger.info('AntiToxic match', { enabled: true, sanitized: detection.sanitized, category: detection.category, keyword: detection.keyword, groupId, authorId });
+ const incident = await repos.badwords.addIncident({ group: groupId, user: authorId, category: detection.category, matched: detection.matched, keyword: detection.keyword, action: 'warn' });
+ eventBus.emit(EVENTS.TOXICITY_DETECTED, { groupId, targetId: authorId, category: detection.category, keyword: detection.keyword, matched: detection.matched, incidentId: incident.id });
  await services.moderation.moderate(message, detection, groupId, authorId);
  return;
  }
