@@ -7,9 +7,10 @@ node_modules/
 # Runtime logs
 logs/
 
-# Runtime data (regenerated on first run; contains user PII — phone
-# numbers in warnings/bans/incident logs — NEVER commit this folder)
-data/
+# Runtime data (contains user PII — phone numbers, warnings, bans, incidents)
+# NEVER commit this folder EXCEPT badwords.json (keyword lists, no PII)
+data/*
+!data/badwords.json
 
 # Local environment / secrets
 .env
