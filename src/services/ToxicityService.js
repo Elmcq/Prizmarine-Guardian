@@ -8,11 +8,14 @@ export class ToxicityService {
  this.reload();
  }
 
+ isEnabled() {
+ return this.repo.isEnabled();
+ }
+
  reload() {
  const data = this.repo.getAll();
  const seen = new Set();
  this.words = [];
-
  for (const [category, entries] of Object.entries(data)) {
  if (category === 'patterns' || !Array.isArray(entries)) continue;
  for (const raw of entries) {
@@ -24,12 +27,10 @@ export class ToxicityService {
  this.words.push({
  category,
  raw,
- normalized,
  regex: new RegExp(`(^|[^a-z0-9])${escapeRegex(normalized)}(?=[^a-z0-9]|$)`, 'i'),
  });
  }
  }
-
  this.patterns = [];
  for (const source of data.patterns || []) {
  if (typeof source !== 'string' || !source.trim()) continue;
@@ -38,22 +39,24 @@ export class ToxicityService {
  } catch {
  }
  }
+ return this.getStats();
+ }
+
+ getStats() {
+ return this.repo.getStats();
  }
 
  detect(text) {
  if (typeof text !== 'string' || !text) {
  return { isToxic: false, matched: [], category: null, keyword: null, sanitized: '' };
  }
-
  const sanitized = sanitize(text);
  if (!sanitized) {
  return { isToxic: false, matched: [], category: null, keyword: null, sanitized };
  }
-
  const matches = [];
  let category = null;
  let keyword = null;
-
  for (const entry of this.words) {
  if (!entry.regex.test(sanitized)) continue;
  matches.push(entry.raw);
@@ -62,7 +65,6 @@ export class ToxicityService {
  keyword = entry.raw;
  }
  }
-
  for (const entry of this.patterns) {
  entry.regex.lastIndex = 0;
  if (!entry.regex.test(sanitized)) continue;
@@ -72,15 +74,8 @@ export class ToxicityService {
  keyword = entry.source;
  }
  }
-
  const matched = [...new Set(matches)];
- return {
- isToxic: matched.length > 0,
- matched,
- category,
- keyword,
- sanitized,
- };
+ return { isToxic: matched.length > 0, matched, category, keyword, sanitized };
  }
 }
 

@@ -1,7 +1,7 @@
 import { EVENTS } from '../config/constants.js';
 
 const SETTINGS_COMMANDS = new Set([
- 'settings', 'antinsfw', 'antiad', 'antiraid', 'antisticker',
+ 'settings', 'antitoxic', 'reloadtoxic', 'antinsfw', 'antiad', 'antiraid', 'antisticker',
  'raidmode', 'reloadnsfw', 'reloadad', 'reloadraid', 'reloadsticker',
 ]);
 
@@ -14,31 +14,39 @@ export class AuditService {
  }
 
  start() {
- this.listen(EVENTS.WARNING_ISSUED, (p) => ({
- action: 'WARNING', user: p.targetId, moderator: p.issuerId, groupId: p.groupId,
- reason: p.reason, details: { count: p.count, severity: p.severity, escalation: p.escalation },
+ this.listen(EVENTS.TOXICITY_DETECTED, (payload) => ({
+ action: 'ANTITOXIC',
+ user: payload.targetId,
+ moderator: 'Prizmarine Guardian',
+ groupId: payload.groupId,
+ reason: `Toxic content detected (${payload.category || 'unknown'}: ${payload.keyword || 'pattern'})`,
+ details: payload,
  }));
- this.listen(EVENTS.USER_KICKED, (p) => ({
- action: 'KICK', user: p.targetId, moderator: p.moderatorId, groupId: p.groupId, reason: p.reason,
+ this.listen(EVENTS.WARNING_ISSUED, (payload) => ({
+ action: 'WARNING', user: payload.targetId, moderator: payload.issuerId, groupId: payload.groupId,
+ reason: payload.reason, details: { count: payload.count, severity: payload.severity, escalation: payload.escalation },
  }));
- this.listen(EVENTS.USER_BANNED, (p) => ({
- action: p.action || 'BAN', user: p.targetId, moderator: p.moderatorId, groupId: p.groupId,
- reason: p.reason, details: { expiresAt: p.expiresAt },
+ this.listen(EVENTS.USER_KICKED, (payload) => ({
+ action: 'KICK', user: payload.targetId, moderator: payload.moderatorId, groupId: payload.groupId, reason: payload.reason,
  }));
- this.listen(EVENTS.USER_UNBANNED, (p) => ({
- action: 'UNBAN', user: p.targetId, moderator: p.moderatorId, reason: p.reason || 'Ban removed',
+ this.listen(EVENTS.USER_BANNED, (payload) => ({
+ action: payload.action || 'BAN', user: payload.targetId, moderator: payload.moderatorId, groupId: payload.groupId,
+ reason: payload.reason, details: { expiresAt: payload.expiresAt },
  }));
- this.listen(EVENTS.RULE_CHANGED, (p) => ({
- action: `RULE_${p.action}`, user: p.ruleId, moderator: p.moderator,
- reason: p.field ? `${p.field} updated` : `Rule ${p.action}`, details: p,
+ this.listen(EVENTS.USER_UNBANNED, (payload) => ({
+ action: 'UNBAN', user: payload.targetId, moderator: payload.moderatorId, reason: payload.reason || 'Ban removed',
  }));
- this.listen(EVENTS.SETTINGS_CHANGED, (p) => ({
- action: 'SETTINGS_CHANGED', user: p.target || p.key || 'global', moderator: p.moderator || 'dashboard',
- reason: p.reason || 'Settings updated', details: p,
+ this.listen(EVENTS.RULE_CHANGED, (payload) => ({
+ action: `RULE_${payload.action}`, user: payload.ruleId, moderator: payload.moderator,
+ reason: payload.field ? `${payload.field} updated` : `Rule ${payload.action}`, details: payload,
  }));
- this.listen(EVENTS.COMMAND_EXECUTED, (p) => SETTINGS_COMMANDS.has(p.command) ? ({
- action: 'SETTINGS_COMMAND', user: p.groupId || 'global', moderator: p.authorId,
- groupId: p.groupId, reason: `${p.command} command executed`,
+ this.listen(EVENTS.SETTINGS_CHANGED, (payload) => ({
+ action: 'SETTINGS_CHANGED', user: payload.target || payload.key || 'global', moderator: payload.moderator || 'dashboard',
+ reason: payload.reason || 'Settings updated', details: payload,
+ }));
+ this.listen(EVENTS.COMMAND_EXECUTED, (payload) => SETTINGS_COMMANDS.has(payload.command) ? ({
+ action: 'SETTINGS_COMMAND', user: payload.groupId || 'global', moderator: payload.authorId,
+ groupId: payload.groupId, reason: `${payload.command} command executed`,
  }) : null);
  return this;
  }
