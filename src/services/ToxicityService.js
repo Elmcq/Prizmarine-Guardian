@@ -1,88 +1,87 @@
-/**
- * @file ToxicityService — detects toxic messages against the word lists
- * stored in data/badwords.json (never hard-coded; loaded via BadwordRepository).
- *
- * Matching is done on a sanitised, normalised copy of the text so that
- * uppercase, accents and light leetspeak are handled. Words are matched on
- * word boundaries so "class" never matches inside "classic".
- */
-
 import { sanitize, escapeRegex } from '../utils/sanitize.js';
 
 export class ToxicityService {
-  /**
-   * @param {import('../database/repositories/BadwordRepository.js').BadwordRepository} badwordRepo
-   */
-  constructor(badwordRepo) {
-    /** @private */
-    this.repo = badwordRepo;
-    /** @private Cached category -> string[] */
-    this.categories = [];
-    /** @private Compiled regex patterns */
-    this.patterns = [];
-    this.reload();
-  }
+ constructor(badwordRepo) {
+ this.repo = badwordRepo;
+ this.words = [];
+ this.patterns = [];
+ this.reload();
+ }
 
-  /** Reload word lists from disk (call after editing badwords.json). */
-  reload() {
-    const data = this.repo.getAll();
-    // Each entry is [categoryName, words[]]; skip the `patterns` key.
-    this.categories = Object.entries(data)
-      .filter(([key]) => key !== 'patterns' && Array.isArray(data[key]))
-      .map(([category, words]) => [category, words.filter((w) => typeof w === 'string')]);
+ reload() {
+ const data = this.repo.getAll();
+ const seen = new Set();
+ this.words = [];
 
-    this.patterns = [];
-    for (const p of data.patterns || []) {
-      try {
-        this.patterns.push(new RegExp(p, 'i'));
-      } catch {
-        // Ignore invalid patterns rather than crashing the bot.
-      }
-    }
-  }
+ for (const [category, entries] of Object.entries(data)) {
+ if (category === 'patterns' || !Array.isArray(entries)) continue;
+ for (const raw of entries) {
+ const normalized = sanitize(raw);
+ if (!normalized) continue;
+ const key = `${category}${normalized}`;
+ if (seen.has(key)) continue;
+ seen.add(key);
+ this.words.push({
+ category,
+ raw,
+ normalized,
+ regex: new RegExp(`(^|[^a-z0-9])${escapeRegex(normalized)}(?=[^a-z0-9]|$)`, 'i'),
+ });
+ }
+ }
 
-  /**
-   * Detect whether a message is toxic.
-   * @param {string} text
-   * @returns {{ isToxic: boolean, matched: string[], category: string|null }}
-   */
-  detect(text) {
-    if (!text || typeof text !== 'string') {
-      return { isToxic: false, matched: [], category: null };
-    }
+ this.patterns = [];
+ for (const source of data.patterns || []) {
+ if (typeof source !== 'string' || !source.trim()) continue;
+ try {
+ this.patterns.push({ source, regex: new RegExp(source, 'i') });
+ } catch {
+ }
+ }
+ }
 
-    const clean = sanitize(text);
-    if (!clean) return { isToxic: false, matched: [], category: null };
+ detect(text) {
+ if (typeof text !== 'string' || !text) {
+ return { isToxic: false, matched: [], category: null, keyword: null, sanitized: '' };
+ }
 
-    const matched = new Set();
-    let category = null;
+ const sanitized = sanitize(text);
+ if (!sanitized) {
+ return { isToxic: false, matched: [], category: null, keyword: null, sanitized };
+ }
 
-    for (const [cat, words] of this.categories) {
-      for (const raw of words) {
-        const word = sanitize(raw);
-        if (!word) continue;
-        // Word-boundary match against the sanitised text.
-        const re = new RegExp(`(^|[^a-z0-9])${escapeRegex(word)}([^a-z0-9]|$)`, 'i');
-        if (re.test(clean)) {
-          matched.add(raw);
-          if (!category) category = cat;
-        }
-      }
-    }
+ const matches = [];
+ let category = null;
+ let keyword = null;
 
-    for (const pattern of this.patterns) {
-      if (pattern.test(clean)) {
-        matched.add(pattern.source);
-        if (!category) category = 'pattern';
-      }
-    }
+ for (const entry of this.words) {
+ if (!entry.regex.test(sanitized)) continue;
+ matches.push(entry.raw);
+ if (!category) {
+ category = entry.category;
+ keyword = entry.raw;
+ }
+ }
 
-    return {
-      isToxic: matched.size > 0,
-      matched: [...matched],
-      category,
-    };
-  }
+ for (const entry of this.patterns) {
+ entry.regex.lastIndex = 0;
+ if (!entry.regex.test(sanitized)) continue;
+ matches.push(entry.source);
+ if (!category) {
+ category = 'patterns';
+ keyword = entry.source;
+ }
+ }
+
+ const matched = [...new Set(matches)];
+ return {
+ isToxic: matched.length > 0,
+ matched,
+ category,
+ keyword,
+ sanitized,
+ };
+ }
 }
 
 export default ToxicityService;
