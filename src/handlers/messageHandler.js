@@ -66,7 +66,8 @@ export function registerMessageHandler({ client, repos, services, config, logger
  logger.info('AntiToxic match', { enabled: true, sanitized: detection.sanitized, category: detection.category, keyword: detection.keyword, groupId, authorId });
  const incident = await repos.badwords.addIncident({ group: groupId, user: authorId, category: detection.category, matched: detection.matched, keyword: detection.keyword, action: 'warn' });
  eventBus.emit(EVENTS.TOXICITY_DETECTED, { groupId, targetId: authorId, category: detection.category, keyword: detection.keyword, matched: detection.matched, incidentId: incident.id });
- await services.moderation.moderate(message, detection, groupId, authorId);
+ const badwordsSettings = repos.badwords.getSettings();
+ await services.moderation.moderate(message, detection, groupId, authorId, badwordsSettings.warnLimit);
  return;
  }
  }

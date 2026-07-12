@@ -102,14 +102,15 @@ export class ModerationService {
  return record;
  }
 
- async moderate(message, detection, groupId, authorId) {
- return this.issueWarning({
- groupId,
- targetId: authorId,
- reason: `Toxic message (${detection.category || 'unknown'})`,
- issuerId: 'auto',
- deleteMessage: message,
- });
+ async moderate(message, detection, groupId, authorId, warnLimit = null) {
+  return this.issueWarning({
+   groupId,
+   targetId: authorId,
+   reason: `Toxic message (${detection.category || 'unknown'})`,
+   issuerId: 'auto',
+   deleteMessage: message,
+   warnLimit,
+  });
  }
 
  async handleAbuse(message, groupId, authorId, kind) {

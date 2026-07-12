@@ -17,6 +17,7 @@ export default {
  `Detections: ${stats.detections}`,
  `Keywords: ${settings.keywords}`,
  `Patterns: ${settings.patterns}`,
+ `Warn limit: ${settings.warnLimit}`,
  `Top category: ${stats.mostTriggeredCategory || 'None'}`,
  ]));
  }

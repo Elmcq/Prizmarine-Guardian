@@ -21,6 +21,7 @@ export class BadwordRepository {
  }
 
  getSettings() {
+  const d = this.db.data || {};
   const categories = this.getAll();
   const categoryCounts = Object.fromEntries(
    Object.entries(categories)
@@ -29,13 +30,23 @@ export class BadwordRepository {
   );
   return {
    enabled: this.isEnabled(),
+   warnLimit: d.warnLimit ?? 3,
+   highSeverityBan: Boolean(d.highSeverityBan),
    categories: categoryCounts,
    keywords: Object.values(categoryCounts).reduce((total, count) => total + count, 0),
    patterns: categories.patterns?.length || 0,
   };
  }
 
- async updateSettings() {
+ async updateSettings(partial = {}) {
+  const d = this.db.data;
+  if (partial.warnLimit !== undefined) {
+   const n = Number(partial.warnLimit);
+   if (Number.isFinite(n) && n >= 1) d.warnLimit = Math.floor(n);
+  }
+  if (partial.highSeverityBan !== undefined) {
+   d.highSeverityBan = Boolean(partial.highSeverityBan);
+  }
   await this.dbService.persist(this.db);
   return this.getSettings();
  }
