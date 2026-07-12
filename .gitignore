@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# WhatsApp session cache (LocalAuth)
+.wwebjs_auth/
+
+# Runtime logs
+logs/
+
+# Runtime data (regenerated on first run; contains user PII — phone
+# numbers in warnings/bans/incident logs — NEVER commit this folder)
+data/
+
+# Local environment / secrets
+.env
+
+# OS / editor cruft
+.DS_Store
+*.log
+
+# ZCode session artifacts (tooling, not part of the bot)
+.zcode/

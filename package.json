@@ -1,0 +1,32 @@
+{
+  "name": "prizmarine-anti-toxic",
+  "version": "1.0.0",
+  "description": "Production-ready WhatsApp anti-toxic moderation bot (detect toxicity, warn, auto-ban repeat offenders).",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "lint": "node --check src/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "whatsapp",
+    "whatsapp-web.js",
+    "moderation",
+    "anti-toxic",
+    "bot"
+  ],
+  "author": "Prizmarine",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "lowdb": "^7.0.1",
+    "node-cron": "^3.0.3",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.26.1",
+    "winston": "^3.13.0"
+  }
+}
