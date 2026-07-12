@@ -104,12 +104,13 @@ tr:last-child td { border-bottom: none; }
 
 /* Overlay / modal */
 .overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+  position: fixed; inset: 0; background: rgba(0,0,0,0.45);
   display: flex; align-items: center; justify-content: center; z-index: 50;
 }
 .login-card, .modal {
-  background: var(--panel); border: 1px solid var(--border);
+  background: rgba(26,29,36,0.85); border: 1px solid var(--border);
   border-radius: 12px; padding: 26px; width: 340px; display: flex; flex-direction: column; gap: 12px;
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
 }
 .login-card h1 { margin: 0; font-size: 1.3rem; }
 .modal label { display: flex; flex-direction: column; gap: 5px; font-size: 0.85rem; color: var(--muted); }
