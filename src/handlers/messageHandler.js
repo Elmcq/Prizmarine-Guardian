@@ -15,7 +15,7 @@
 import { EVENTS } from '../config/constants.js';
 import { UNAUTHORIZED_TEXT, cooldownText } from '../utils/formatter.js';
 import { guardCommand } from '../middleware/rateLimitMiddleware.js';
-import { shouldModerate, isGroupAdmin } from '../middleware/authMiddleware.js';
+import { shouldModerate, isGroupAdmin, isOwner } from '../middleware/authMiddleware.js';
 import { isOnCooldown, markCooldown } from '../middleware/cooldownMiddleware.js';
 
 /**
@@ -48,7 +48,7 @@ export function registerMessageHandler({
 
       await repos.settings.incMessagesSeen();
 
-      const isOwner = authorId === config.owner;
+      const ownerCheck = isOwner(authorId, config.owner);
       const isAdmin = isGroup ? await isGroupAdmin(client, chat, authorId) : false;
 
       const body = (message.body || '').trim();
@@ -83,7 +83,7 @@ export function registerMessageHandler({
             return;
           }
 
-          if (command.adminOnly && !(isOwner || isAdmin)) {
+          if (command.adminOnly && !(ownerCheck || isAdmin)) {
             await message.reply(UNAUTHORIZED_TEXT);
             return;
           }
@@ -103,7 +103,7 @@ export function registerMessageHandler({
             authorId,
             groupId,
             isAdmin,
-            isOwner,
+            isOwner: ownerCheck,
             commandName: cmdName,
           };
 
