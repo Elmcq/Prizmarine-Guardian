@@ -55,7 +55,8 @@ $('#login-form').addEventListener('submit', async (e) => {
   }
 });
 
-$('#logout').addEventListener('click', async () => {
+$('#sidebar-logout').addEventListener('click', async (e) => {
+  e.preventDefault();
   try { await api('/api/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
   showLogin();
 });
@@ -86,7 +87,7 @@ async function loadOverview() {
     { label: 'Memory (RSS)', value: `${mem.rssMb} MB` },
     { label: 'Rules', value: d.rules.total },
   ];
-  $('#overview').innerHTML = cards.map((c) => `
+  $('#overview-cards').innerHTML = cards.map((c) => `
     <div class="card">
       <div class="stat">${escapeHtml(String(c.value))}</div>
       <div class="stat-label">${escapeHtml(c.label)}</div>
@@ -95,7 +96,7 @@ async function loadOverview() {
 
 async function loadModules() {
   const list = await api('/api/modules');
-  $('#modules').innerHTML = list.map((m) => {
+  $('#modules-cards').innerHTML = list.map((m) => {
     const fields = m.fields.map((f) => {
       const val = m.settings[f.key];
       const input = f.type === 'bool'
@@ -117,7 +118,7 @@ async function loadModules() {
     </div>`;
   }).join('');
 
-  document.querySelectorAll('#modules .card').forEach((card) => {
+  document.querySelectorAll('#modules-cards .card').forEach((card) => {
     card.querySelector('.mod-save').addEventListener('click', () => saveModule(card));
   });
 }
@@ -143,10 +144,10 @@ async function saveModule(card) {
 async function loadRules() {
   const list = await api('/api/rules');
   if (!list.length) {
-    $('#rules').innerHTML = '<div class="table-wrap"><p class="muted" style="padding:12px">No rules yet.</p></div>';
+    $('#rules-list').innerHTML = '<div class="table-wrap"><p class="muted" style="padding:12px">No rules yet.</p></div>';
     return;
   }
-  $('#rules').innerHTML = `
+  $('#rules-list').innerHTML = `
     <table>
       <thead><tr><th>ID</th><th>Title</th><th>Description</th><th>Punishment</th><th></th></tr></thead>
       <tbody>
@@ -163,9 +164,9 @@ async function loadRules() {
           </tr>`).join('')}
       </tbody>
     </table>`;
-  $('#rules').querySelectorAll('.rule-edit').forEach((b) =>
+  $('#rules-list').querySelectorAll('.rule-edit').forEach((b) =>
     b.addEventListener('click', () => openRuleModal(b.dataset.id)));
-  $('#rules').querySelectorAll('.rule-delete').forEach((b) =>
+  $('#rules-list').querySelectorAll('.rule-delete').forEach((b) =>
     b.addEventListener('click', () => deleteRule(b.dataset.id)));
 }
 
@@ -175,7 +176,7 @@ $('#rule-cancel').addEventListener('click', () => $('#rule-modal').classList.add
 function openRuleModal(id) {
   $('#rule-error').textContent = '';
   if (id) {
-    const row = [...document.querySelectorAll('#rules tr')]
+    const row = [...document.querySelectorAll('#rules-list tr')]
       .find((tr) => tr.querySelector('.rule-edit')?.dataset.id === id);
     $('#rule-modal-title').textContent = 'Edit rule';
     $('#rule-id-old').value = id;
@@ -243,10 +244,10 @@ async function loadIncidents() {
   const mod = $('#incident-module').value;
   const d = await api(`/api/data/incidents?module=${mod}&limit=50`);
   if (!d.items.length) {
-    $('#incidents').innerHTML = '<div class="table-wrap"><p class="muted" style="padding:12px">No incidents.</p></div>';
+    $('#incidents-table').innerHTML = '<div class="table-wrap"><p class="muted" style="padding:12px">No incidents.</p></div>';
     return;
   }
-  $('#incidents').innerHTML = `
+  $('#incidents-table').innerHTML = `
     <table>
       <thead><tr><th>Time</th><th>Group</th><th>User</th><th>Category/Type</th><th>Sev</th><th>Action</th></tr></thead>
       <tbody>
@@ -266,10 +267,10 @@ async function loadIncidents() {
 async function loadBans() {
   const d = await api('/api/data/bans?limit=100');
   if (!d.items.length) {
-    $('#bans').innerHTML = '<div class="table-wrap"><p class="muted" style="padding:12px">No bans.</p></div>';
+    $('#bans-table').innerHTML = '<div class="table-wrap"><p class="muted" style="padding:12px">No bans.</p></div>';
     return;
   }
-  $('#bans').innerHTML = `
+  $('#bans-table').innerHTML = `
     <table>
       <thead><tr><th>User</th><th>Group</th><th>Reason</th><th>Banned</th><th>Expires</th></tr></thead>
       <tbody>
@@ -288,10 +289,10 @@ async function loadBans() {
 async function loadWarnings() {
   const d = await api('/api/data/warnings?limit=100');
   if (!d.items.length) {
-    $('#warnings').innerHTML = '<div class="table-wrap"><p class="muted" style="padding:12px">No warnings.</p></div>';
+    $('#warnings-table').innerHTML = '<div class="table-wrap"><p class="muted" style="padding:12px">No warnings.</p></div>';
     return;
   }
-  $('#warnings').innerHTML = `
+  $('#warnings-table').innerHTML = `
     <table>
       <thead><tr><th>User</th><th>Group</th><th>Count</th><th>Reasons</th></tr></thead>
       <tbody>
@@ -329,6 +330,34 @@ setInterval(() => {
     loadModules().catch(() => {});
   }
 }, 20000);
+
+/* ---------------- Sidebar navigation ---------------- */
+const sections = ['overview','modules','rules','incidents','bans','warnings'];
+const navLinks = document.querySelectorAll('.sidebar-link[data-section]');
+
+function setActiveNav(id) {
+  navLinks.forEach((l) => {
+    l.classList.toggle('active', l.dataset.section === id);
+  });
+}
+
+navLinks.forEach((link) => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const target = document.getElementById(link.dataset.section);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setActiveNav(link.dataset.section);
+  });
+});
+
+window.addEventListener('scroll', () => {
+  let current = sections[0];
+  for (const id of sections) {
+    const el = document.getElementById(id);
+    if (el && el.getBoundingClientRect().top <= 80) current = id;
+  }
+  setActiveNav(current);
+}, { passive: true });
 
 // Initial auth check
 boot();

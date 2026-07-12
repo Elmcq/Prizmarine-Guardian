@@ -23,38 +23,46 @@
   </div>
 
   <!-- Main app -->
-  <div id="app" class="hidden">
-    <button id="logout" class="Btn">
-      <div class="sign">
-        <svg viewBox="0 0 512 512">
-          <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path>
-        </svg>
-      </div>
-      <div class="text">Logout</div>
-    </button>
+  <div id="app" class="hidden app-layout">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-brand">🛡️ Prizmarine</div>
+      <a href="#overview" class="sidebar-link active" data-section="overview">Overview</a>
+      <a href="#modules" class="sidebar-link" data-section="modules">Modules</a>
+      <a href="#rules" class="sidebar-link" data-section="rules">Rules</a>
+      <a href="#incidents" class="sidebar-link" data-section="incidents">Incidents</a>
+      <a href="#bans" class="sidebar-link" data-section="bans">Bans</a>
+      <a href="#warnings" class="sidebar-link" data-section="warnings">Warnings</a>
+      <div class="sidebar-spacer"></div>
+      <a href="#" id="sidebar-logout" class="sidebar-link sidebar-logout">
+        <svg viewBox="0 0 512 512" width="16" height="16"><path fill="currentColor" d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path></svg>
+        Logout
+      </a>
+    </nav>
 
-    <main>
-      <section>
+    <!-- Content -->
+    <main class="content">
+      <section id="overview">
         <h2>Overview</h2>
-        <div id="overview" class="cards"></div>
+        <div id="overview-cards" class="cards"></div>
       </section>
 
-      <section>
+      <section id="modules">
         <div class="section-head">
           <h2>Modules</h2>
         </div>
-        <div id="modules" class="cards"></div>
+        <div id="modules-cards" class="cards"></div>
       </section>
 
-      <section>
+      <section id="rules">
         <div class="section-head">
           <h2>Rules</h2>
           <button id="add-rule" class="primary">+ Add rule</button>
         </div>
-        <div id="rules" class="table-wrap"></div>
+        <div id="rules-list" class="table-wrap"></div>
       </section>
 
-      <section>
+      <section id="incidents">
         <div class="section-head">
           <h2>Incidents</h2>
           <select id="incident-module">
@@ -65,23 +73,23 @@
           </select>
           <button id="refresh-incidents" class="ghost">Refresh</button>
         </div>
-        <div id="incidents" class="table-wrap"></div>
+        <div id="incidents-table" class="table-wrap"></div>
       </section>
 
-      <section>
+      <section id="bans">
         <div class="section-head">
           <h2>Bans</h2>
           <button id="refresh-bans" class="ghost">Refresh</button>
         </div>
-        <div id="bans" class="table-wrap"></div>
+        <div id="bans-table" class="table-wrap"></div>
       </section>
 
-      <section>
+      <section id="warnings">
         <div class="section-head">
           <h2>Warnings</h2>
           <button id="refresh-warnings" class="ghost">Refresh</button>
         </div>
-        <div id="warnings" class="table-wrap"></div>
+        <div id="warnings-table" class="table-wrap"></div>
       </section>
     </main>
   </div>
