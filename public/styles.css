@@ -26,30 +26,71 @@ body {
 .error { color: var(--red); font-size: 0.85rem; min-height: 1em; }
 
 /* Logout button */
-.logout-btn {
+.Btn {
   position: fixed;
   top: 16px;
   right: 16px;
   z-index: 40;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 45px;
+  height: 45px;
   border: 1px solid var(--border);
-  background: var(--panel);
-  color: var(--text);
-  font-size: 1.1rem;
+  border-radius: 50%;
   cursor: pointer;
+  overflow: hidden;
+  transition-duration: 0.3s;
+  background: var(--panel);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+.sign {
+  width: 100%;
+  transition-duration: 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  transition: background 0.2s, border-color 0.2s;
 }
-.logout-btn:hover {
-  background: rgba(255,93,93,0.2);
-  border-color: rgba(255,93,93,0.4);
-  color: var(--red);
+.sign svg {
+  width: 17px;
+}
+.sign svg path {
+  fill: var(--text);
+}
+.text {
+  position: absolute;
+  right: 0%;
+  width: 0%;
+  opacity: 0;
+  color: white;
+  font-size: 1.2em;
+  font-weight: 600;
+  transition-duration: 0.3s;
+}
+.Btn:hover {
+  background: rgba(255,93,93,0.3);
+  border-color: rgba(255,93,93,0.5);
+  width: 125px;
+  border-radius: 40px;
+  transition-duration: 0.3s;
+}
+.Btn:hover .sign {
+  width: 30%;
+  transition-duration: 0.3s;
+  padding-left: 20px;
+}
+.Btn:hover .sign svg path {
+  fill: white;
+}
+.Btn:hover .text {
+  opacity: 1;
+  width: 70%;
+  transition-duration: 0.3s;
+  padding-right: 10px;
+}
+.Btn:active {
+  transform: translate(2px, 2px);
 }
 
 main { max-width: 980px; margin: 0 auto; padding: 22px; }
