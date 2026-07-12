@@ -149,7 +149,7 @@ section {
 /* ---- Cards ---- */
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--sp-sm);
 }
 
@@ -187,6 +187,14 @@ section {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--sp-xs);
+}
+
+.module-head h3 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .field {
@@ -488,7 +496,7 @@ tr:last-child td {
   }
 
   .cards {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: var(--sp-xs);
   }
 
@@ -497,8 +505,8 @@ tr:last-child td {
   }
 
   .stat {
-    font-size: 24px;
-    line-height: 30px;
+    font-size: 28px;
+    line-height: 34px;
   }
 
   .section-head {
@@ -547,10 +555,6 @@ tr:last-child td {
 
 /* ---- Small phone (<= 420px) ---- */
 @media (max-width: 420px) {
-  .cards {
-    grid-template-columns: 1fr;
-  }
-
   .stat {
     font-size: 22px;
     line-height: 28px;
