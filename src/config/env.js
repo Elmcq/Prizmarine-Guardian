@@ -34,6 +34,7 @@ export const config = Object.freeze({
   botName: process.env.BOT_NAME || 'Prizmarine Guardian',
   prefix: process.env.PREFIX || '!',
   owner: normalizeWid(process.env.OWNER || ''),
+  ownerLid: (process.env.OWNER_LID || '').trim(),
   warnLimit: parsePositiveInt(process.env.WARN_LIMIT, 3),
   banDuration: parsePositiveInt(process.env.BAN_DURATION, 86_400_000),
   logLevel: process.env.LOG_LEVEL || 'info',

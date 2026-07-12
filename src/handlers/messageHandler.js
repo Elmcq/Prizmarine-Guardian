@@ -48,26 +48,9 @@ export function registerMessageHandler({
 
       await repos.settings.incMessagesSeen();
 
-      // Resolve WhatsApp LID (@lid) to phone number for owner matching
-      let resolvedAuthorId = authorId;
-      if (authorId && authorId.includes('@lid')) {
-        try {
-          const msgContact = await message.getContact();
-          if (msgContact && msgContact.number) {
-            resolvedAuthorId = msgContact.number + '@s.whatsapp.net';
-          }
-        } catch (_) {
-          try {
-            const c = await client.getContactById(authorId);
-            if (c && c.number) {
-              resolvedAuthorId = c.number + '@s.whatsapp.net';
-            }
-          } catch (_2) { /* ignore */ }
-        }
-        logger.info(`LID resolved: ${authorId} -> ${resolvedAuthorId}`);
-      }
-
-      const ownerCheck = isOwner(resolvedAuthorId, config.owner);
+      const ownerCheck = isOwner(authorId, config.owner)
+        || (config.ownerLid && authorId === config.ownerLid)
+        || (config.ownerLid && isOwner(authorId, config.ownerLid));
       const isAdmin = isGroup ? await isGroupAdmin(client, chat, authorId) : false;
 
       const body = (message.body || '').trim();
@@ -140,7 +123,7 @@ export function registerMessageHandler({
 
       // ---- 2) Automatic moderation (groups only, not privileged) ----
       if (isGroup) {
-        const moderate = await shouldModerate({ message, client, chat, authorId: resolvedAuthorId, config });
+        const moderate = await shouldModerate({ message, client, chat, authorId, config });
         if (!moderate) return;
 
         const detection = services.toxicity.detect(body);
