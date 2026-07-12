@@ -12,6 +12,10 @@
   --sidebar-width: 220px;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 * { box-sizing: border-box; }
 
 body {
@@ -20,6 +24,7 @@ body {
   background: #0a0c10 url("/ember-orbit.png") center / cover fixed no-repeat;
   color: var(--text);
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .hidden { display: none !important; }
