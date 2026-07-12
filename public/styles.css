@@ -25,18 +25,32 @@ body {
 .muted { color: var(--muted); font-size: 0.85rem; }
 .error { color: var(--red); font-size: 0.85rem; min-height: 1em; }
 
-/* Top bar */
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 22px;
+/* Logout button */
+.logout-btn {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 40;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
   background: var(--panel);
-  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
+  transition: background 0.2s, border-color 0.2s;
 }
-.topbar h1 { margin: 0; font-size: 1.2rem; }
+.logout-btn:hover {
+  background: rgba(255,93,93,0.2);
+  border-color: rgba(255,93,93,0.4);
+  color: var(--red);
+}
 
 main { max-width: 980px; margin: 0 auto; padding: 22px; }
 section { margin-bottom: 34px; }
