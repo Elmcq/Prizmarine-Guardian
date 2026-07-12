@@ -31,6 +31,7 @@ import { StickerService } from './services/StickerService.js';
 import { RuleService } from './services/RuleService.js';
 import { PermissionService } from './services/PermissionService.js';
 import { AuditService } from './services/AuditService.js';
+import { ContactResolver } from './services/ContactResolver.js';
 import { registerMessageHandler } from './handlers/messageHandler.js';
 import { registerReadyHandler } from './handlers/readyHandler.js';
 import { registerConnectionHandlers } from './handlers/authFailureHandler.js';
@@ -83,6 +84,8 @@ async function bootstrap() {
  moderation.setClient(client);
  permissionService.setClient(client);
 
+ const contactResolver = new ContactResolver(client, logger);
+
  const services = {
  toxicity,
  nsfw: nsfwService,
@@ -98,7 +101,7 @@ async function bootstrap() {
  audit,
  };
 
- registerMessageHandler({ client, repos, services, config, logger, eventBus, rateLimiter, commandRegistry });
+ registerMessageHandler({ client, repos, services, config, logger, eventBus, rateLimiter, commandRegistry, contactResolver });
  registerNSFWHandler({ client, repos, services, config, logger, eventBus, nsfwService });
  registerAdvertisementHandler({ client, repos, services, config, logger, eventBus, advertisementService });
  registerRaidHandler({ client, repos, services, config, logger, eventBus, raidService });
@@ -130,7 +133,7 @@ async function bootstrap() {
  let dashboardServer = null;
  if (config.dashboardToken) {
  try {
- const app = createDashboard({ repos, services, config, logger, eventBus });
+ const app = createDashboard({ repos, services, config, logger, eventBus, contactResolver });
  dashboardServer = app.listen(config.dashboardPort, config.dashboardHost, () => {
  logger.info(`Dashboard listening on http://${config.dashboardHost}:${config.dashboardPort}`);
  });

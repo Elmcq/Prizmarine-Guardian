@@ -4,13 +4,20 @@ import { guardCommand } from '../middleware/rateLimitMiddleware.js';
 import { shouldModerate, isGroupAdmin, isOwner } from '../middleware/authMiddleware.js';
 import { isOnCooldown, markCooldown } from '../middleware/cooldownMiddleware.js';
 
-export function registerMessageHandler({ client, repos, services, config, logger, eventBus, rateLimiter, commandRegistry }) {
+export function registerMessageHandler({ client, repos, services, config, logger, eventBus, rateLimiter, commandRegistry, contactResolver }) {
  client.on('message', async (message) => {
- try {
- const chat = await message.getChat();
- const isGroup = Boolean(chat.isGroup);
- const authorId = message.author || message.from;
- const groupId = isGroup ? chat.id._serialized : null;
+  try {
+   const chat = await message.getChat();
+   const isGroup = Boolean(chat.isGroup);
+   const authorId = message.author || message.from;
+   const groupId = isGroup ? chat.id._serialized : null;
+
+   if (contactResolver && authorId) {
+    try {
+     const contact = await client.getContactById(authorId);
+     if (contact.pushname || contact.name) contactResolver.cacheName(authorId, contact.pushname || contact.name);
+    } catch {}
+   }
  await repos.settings.incMessagesSeen();
  const ownerCheck = isOwner(authorId, config.owner)
  || (config.ownerLid && authorId === config.ownerLid)

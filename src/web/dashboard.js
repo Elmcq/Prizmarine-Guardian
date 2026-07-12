@@ -11,7 +11,7 @@ import { settingsRouter } from './routes/settings.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.resolve(__dirname, '..', '..', 'public');
 
-export function createDashboard({ repos, services, config, logger, eventBus }) {
+export function createDashboard({ repos, services, config, logger, eventBus, contactResolver }) {
  const app = express();
  app.use(express.json({ limit: '64kb' }));
  const auth = createAuth(config.dashboardToken);
@@ -19,11 +19,11 @@ export function createDashboard({ repos, services, config, logger, eventBus }) {
  app.post('/api/auth/logout', auth.logout);
  app.get('/api/auth/me', auth.requireAuth, (req, res) => res.json({ authed: true }));
  app.use('/api', auth.requireAuth);
- app.use('/api/overview', overviewRouter({ repos, services, config }));
+ app.use('/api/overview', overviewRouter({ repos, services, config, contactResolver }));
  app.use('/api/modules', modulesRouter({ repos, services, eventBus }));
  app.use('/api/rules', rulesRouter({ services }));
  app.use('/api/settings', settingsRouter({ repos, config, eventBus }));
- app.use('/api/data', dataRouter({ repos }));
+ app.use('/api/data', dataRouter({ repos, contactResolver }));
  app.use(express.static(PUBLIC_DIR));
  app.get(/^\/(?!api).*/, (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
  app.use((err, req, res, next) => {
