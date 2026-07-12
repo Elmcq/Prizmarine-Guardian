@@ -72,7 +72,8 @@ export class ContactResolver {
  async _fetchName(id) {
   if (!this.client) return this._idToDisplay(id);
   try {
-   const contact = await this.client.getContactById(id);
+   const waId = id.includes('@') ? id : `${id}@c.us`;
+   const contact = await this.client.getContactById(waId);
    const name = contact.pushname || contact.name || contact.number || this._idToDisplay(id);
    return name;
   } catch {

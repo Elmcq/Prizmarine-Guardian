@@ -20,13 +20,13 @@ export function overviewRouter({ repos, services, config, contactResolver }) {
 
   let recentActions = repos.audit.all(8);
   if (contactResolver) {
-   const ids = recentActions.flatMap((a) => [a.user, a.moderator, a.group].filter(Boolean));
+   const ids = recentActions.flatMap((a) => [a.user, a.moderator, a.groupId].filter(Boolean));
    const names = await contactResolver.resolveMany(ids);
    recentActions = recentActions.map((a) => ({
     ...a,
     user: names.get(a.user) || shortId(a.user),
     moderator: names.get(a.moderator) || shortId(a.moderator),
-    group: names.get(a.group) || shortId(a.group),
+    groupId: names.get(a.groupId) || shortId(a.groupId),
    }));
   }
 

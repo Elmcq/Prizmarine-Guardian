@@ -388,6 +388,7 @@ function escapeHtml(s) {
 }
 function shortId(id) {
   if (!id) return '-';
+  if (/[a-zA-Z]/.test(id)) return id;
   return id.length > 16 ? `${id.slice(0, 8)}…` : id;
 }
 function fmtTime(ts) {
