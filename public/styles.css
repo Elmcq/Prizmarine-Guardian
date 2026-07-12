@@ -202,13 +202,24 @@ section {
   justify-content: space-between;
   align-items: center;
   margin: var(--sp-xs) 0;
-  gap: var(--sp-xs);
+  gap: var(--sp-sm);
 }
 
 .field label {
   color: var(--tertiary);
   font-family: var(--font-mono);
   font-size: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.field:has(input[type="checkbox"]) {
+  justify-content: flex-start;
+  gap: var(--sp-sm);
+}
+
+.field:has(input[type="checkbox"]) label {
+  flex: none;
 }
 
 .field input[type="number"] {
@@ -237,6 +248,42 @@ textarea {
   width: 100%;
   resize: vertical;
   border-radius: var(--radius-md);
+}
+
+/* Custom checkbox */
+input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--border-muted);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+input[type="checkbox"]:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 6px;
+  height: 12px;
+  border: solid var(--neutral);
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--primary);
 }
 
 /* ---- Buttons ---- */
