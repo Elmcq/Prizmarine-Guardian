@@ -7,7 +7,7 @@ const CHARS = '█▓▒░0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&*';
 
 function decryptText(el, finalText, opts = {}) {
   if (!el) return;
-  const { speed = 30, stagger = 40, color = '#4f9dff' } = opts;
+  const { speed = 30, stagger = 40, color = '#fef47a' } = opts;
   const text = String(finalText);
   el.innerHTML = '';
   const spans = [];
@@ -41,7 +41,7 @@ function decryptText(el, finalText, opts = {}) {
 
 function decryptToast(el, text) {
   if (!el) return;
-  decryptText(el, text, { speed: 20, stagger: 25, color: '#4f9dff' });
+  decryptText(el, text, { speed: 20, stagger: 25, color: '#fef47a' });
 }
 
 /* ---------------- API ---------------- */
