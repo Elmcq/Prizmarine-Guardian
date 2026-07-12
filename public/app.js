@@ -57,6 +57,7 @@ $('#login-form').addEventListener('submit', async (e) => {
 
 $('#sidebar-logout').addEventListener('click', async (e) => {
   e.preventDefault();
+  closeSidebar();
   try { await api('/api/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
   showLogin();
 });
@@ -347,6 +348,7 @@ navLinks.forEach((link) => {
     const target = document.getElementById(link.dataset.section);
     if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setActiveNav(link.dataset.section);
+    closeSidebar();
   });
 });
 
@@ -358,6 +360,25 @@ window.addEventListener('scroll', () => {
   }
   setActiveNav(current);
 }, { passive: true });
+
+/* ---------------- Hamburger / mobile sidebar ---------------- */
+const hamburger = $('#hamburger');
+const sidebar = $('#sidebar');
+const sidebarOverlay = $('#sidebar-overlay');
+
+function openSidebar() {
+  sidebar.classList.add('open');
+  sidebarOverlay.classList.add('open');
+}
+function closeSidebar() {
+  sidebar.classList.remove('open');
+  sidebarOverlay.classList.remove('open');
+}
+
+if (hamburger) hamburger.addEventListener('click', () => {
+  sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+});
+if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
 
 // Initial auth check
 boot();
