@@ -1,6 +1,4 @@
-import { usageText } from '../utils/formatter.js';
-
-const OWNER_ONLY = '🚫 This command is owner-only.';
+import { successText, errorText, usageText, OWNER_ONLY } from './messages.js';
 
 export default {
  name: 'editrule',
@@ -16,10 +14,10 @@ export default {
  }
  try {
  const result = await ctx.services.rule.editRule(id, field.toLowerCase(), value, ctx.authorId);
- if (result.unchanged) return ctx.message.reply(`ℹ️ Rule ${result.id} ${result.field} is already "${result.new}".`);
- await ctx.message.reply(`✅ Rule ${result.id} updated\n${result.field}: ${result.old} → ${result.new}`);
+ if (result.unchanged) return ctx.message.reply(successText('Rule checked', 'No changes', `${result.id} ${result.field} is already "${result.new}".`));
+ await ctx.message.reply(successText('Rule updated', 'Completed', `${result.id} ${result.field}: ${result.old} → ${result.new}`));
  } catch (err) {
- await ctx.message.reply(`⚠️ ${err.message}`);
+ await ctx.message.reply(errorText(err.message, 'Provide a valid rule ID, field, and value.'));
  }
  },
 };

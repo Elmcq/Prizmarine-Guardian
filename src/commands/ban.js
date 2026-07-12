@@ -1,6 +1,6 @@
-import { getMentionedIds, extractReason, mentionToken } from '../utils/mentions.js';
-import { moderationActionText, usageText } from '../utils/formatter.js';
+import { getMentionedIds, extractReason } from '../utils/mentions.js';
 import { humanizeDuration } from '../utils/time.js';
+import { moderationText, usageText, GROUP_ONLY } from './messages.js';
 
 export default {
  name: 'ban',
@@ -8,7 +8,7 @@ export default {
  adminOnly: true,
  usage: '@user [RuleId] [note]',
  async run(ctx) {
- if (!ctx.groupId) return ctx.message.reply('⚠️ This command only works in groups.');
+ if (!ctx.groupId) return ctx.message.reply(GROUP_ONLY);
  const targets = getMentionedIds(ctx.message);
  if (!targets.length) return ctx.message.reply(usageText(ctx.config.prefix, 'ban', '@user [RuleId] [note]'));
  const target = targets[0];
@@ -19,15 +19,7 @@ export default {
  const note = parsed.rest.join(' ').trim();
  const reason = note ? `${rule.description}\n\n${note}` : rule.description;
  const templates = {
- ban: (value) => moderationActionText({
- botName: value.botName,
- userId: value.userId,
- action: 'Ban',
- ruleId: rule.id,
- ruleTitle: rule.title,
- reason,
- moderatorId: ctx.authorId,
- }),
+ ban: (value) => moderationText({ userId: value.userId, action: 'Ban', ruleId: rule.id, ruleTitle: rule.title, reason, moderatorId: ctx.authorId }),
  };
  await ctx.services.moderation.banUser(ctx.groupId, target, reason, templates, null, { moderatorId: ctx.authorId, action: 'BAN' });
  return;
@@ -36,8 +28,8 @@ export default {
  await ctx.services.moderation.banUser(ctx.groupId, target, reason, null, null, { moderatorId: ctx.authorId, action: 'BAN' });
  await ctx.services.moderation.sendWithMentions(
  ctx.groupId,
- `✅ ${mentionToken(target)} banned for ${humanizeDuration(ctx.config.banDuration)}.`,
- [target],
+ moderationText({ userId: target, action: `Ban (${humanizeDuration(ctx.config.banDuration)})`, reason, moderatorId: ctx.authorId }),
+ [target, ctx.authorId],
  );
  },
 };

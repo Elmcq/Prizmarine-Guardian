@@ -1,5 +1,5 @@
 import { getMentionedIds, mentionToken } from '../utils/mentions.js';
-import { usageText } from '../utils/formatter.js';
+import { successText, errorText, usageText } from './messages.js';
 
 export default {
  name: 'unban',
@@ -13,8 +13,8 @@ export default {
  const removed = await ctx.services.moderation.unbanUser(target, ctx.authorId);
  await ctx.message.reply(
  removed
- ? `✅ ${mentionToken(target)} has been unbanned.`
- : `ℹ️ ${mentionToken(target)} had no active ban.`,
+ ? successText('Ban removed', 'Completed', `${mentionToken(target)} may rejoin.`)
+ : errorText(`${mentionToken(target)} has no active ban.`, 'Provide a currently banned user.'),
  );
  },
 };
