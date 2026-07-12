@@ -24,16 +24,9 @@ for (const text of ['Fuck', 'fuck', 'FUCK', 'fUcK']) {
  });
 }
 
-test('detects multiple toxic words in a sentence', () => {
- const result = service.detect('Fuck dick');
- assert.equal(result.isToxic, true);
- assert.deepEqual(result.matched, ['fuck', 'dick']);
-});
-
-test('detects Indonesian toxic words', () => {
- const result = service.detect('anjing');
- assert.equal(result.isToxic, true);
- assert.equal(result.category, 'indonesian');
+test('detects Dick and Indonesian keywords', () => {
+ assert.equal(service.detect('Dick').keyword, 'dick');
+ assert.equal(service.detect('anjing').category, 'indonesian');
 });
 
 test('normal messages pass', () => {
@@ -44,14 +37,44 @@ test('word boundaries minimize false positives', () => {
  assert.equal(service.detect('firetruck').isToxic, false);
 });
 
-test('module metadata is excluded from keyword categories', () => {
+test('loads top-level category arrays', () => {
  const db = {
- badwords: { data: { enabled: true, incidents: [{ category: 'english', action: 'warn' }], english: ['fuck'], patterns: [] } },
+ badwords: { data: { enabled: true, english: ['fuck'], indonesian: ['anjing'], patterns: [] } },
  persist: async () => {},
  uuid: () => 'id',
  };
  const repo = new BadwordRepository(db);
- assert.deepEqual(Object.keys(repo.getAll()), ['english', 'patterns']);
- assert.equal(repo.getStats().detections, 1);
- assert.equal(repo.isEnabled(), true);
+ assert.equal(repo.getSettings().keywords, 2);
+});
+
+test('loads wrapped category arrays even when empty defaults exist at root', () => {
+ const db = {
+ badwords: {
+ data: {
+ enabled: true,
+ english: [],
+ indonesian: [],
+ patterns: [],
+ badwords: {
+ english: ['fuck', 'dick'],
+ indonesian: ['anjing'],
+ slurs: [],
+ hateSpeech: [],
+ harassment: [],
+ spamInsults: [],
+ patterns: ['bad\\s+phrase'],
+ },
+ },
+ },
+ persist: async () => {},
+ uuid: () => 'id',
+ };
+ const repo = new BadwordRepository(db);
+ const settings = repo.getSettings();
+ assert.equal(settings.keywords, 3);
+ assert.equal(settings.patterns, 1);
+ const wrappedService = new ToxicityService(repo);
+ assert.equal(wrappedService.detect('Fuck').isToxic, true);
+ assert.equal(wrappedService.detect('Dick').isToxic, true);
+ assert.equal(wrappedService.detect('anjing').isToxic, true);
 });

@@ -1,4 +1,5 @@
-const META_KEYS = new Set(['enabled', 'incidents']);
+const META_KEYS = new Set(['enabled', 'incidents', 'records']);
+const WRAPPER_KEYS = ['badwords', 'categories', 'words', 'data'];
 
 export class BadwordRepository {
  constructor(dbService) {
@@ -17,16 +18,15 @@ export class BadwordRepository {
 
  getSettings() {
  const categories = this.getAll();
- return {
- enabled: this.isEnabled(),
- categories: Object.fromEntries(
+ const categoryCounts = Object.fromEntries(
  Object.entries(categories)
  .filter(([name]) => name !== 'patterns')
  .map(([name, entries]) => [name, entries.length]),
- ),
- keywords: Object.entries(categories)
- .filter(([name]) => name !== 'patterns')
- .reduce((total, [, entries]) => total + entries.length, 0),
+ );
+ return {
+ enabled: this.isEnabled(),
+ categories: categoryCounts,
+ keywords: Object.values(categoryCounts).reduce((total, count) => total + count, 0),
  patterns: categories.patterns?.length || 0,
  };
  }
@@ -42,12 +42,30 @@ export class BadwordRepository {
  }
 
  getAll() {
- const data = this.db.data;
- if (!data || typeof data !== 'object' || Array.isArray(data)) return { patterns: [] };
+ const root = this.db.data;
+ if (!root || typeof root !== 'object' || Array.isArray(root)) return { patterns: [] };
+
+ const sources = [];
+ const visited = new Set();
+ const collectSource = (value, depth = 0) => {
+ if (!value || typeof value !== 'object' || Array.isArray(value) || visited.has(value) || depth > 3) return;
+ visited.add(value);
+ sources.push(value);
+ for (const key of WRAPPER_KEYS) collectSource(value[key], depth + 1);
+ };
+ collectSource(root);
+
  const categories = {};
- for (const [name, entries] of Object.entries(data)) {
- if (META_KEYS.has(name) || !Array.isArray(entries)) continue;
- categories[name] = entries.filter((entry) => typeof entry === 'string' && entry.trim());
+ for (const source of sources) {
+ for (const [name, entries] of Object.entries(source)) {
+ if (META_KEYS.has(name) || WRAPPER_KEYS.includes(name) || !Array.isArray(entries)) continue;
+ if (!categories[name]) categories[name] = [];
+ for (const entry of entries) {
+ if (typeof entry !== 'string') continue;
+ const clean = entry.trim();
+ if (clean && !categories[name].includes(clean)) categories[name].push(clean);
+ }
+ }
  }
  if (!categories.patterns) categories.patterns = [];
  return categories;
