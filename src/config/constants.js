@@ -16,8 +16,9 @@ export const DB_FILES = Object.freeze({
  advertisement: path.join(DATA_DIR, 'advertisement.json'),
  raid: path.join(DATA_DIR, 'raid.json'),
  sticker: path.join(DATA_DIR, 'sticker.json'),
- rules: path.join(DATA_DIR, 'rules.json'),
- audit: path.join(DATA_DIR, 'audit.json'),
+  rules: path.join(DATA_DIR, 'rules.json'),
+  audit: path.join(DATA_DIR, 'audit.json'),
+  bugreports: path.join(DATA_DIR, 'bugreports.json'),
 });
 
 export const BACKUP_DIR = path.join(DATA_DIR, 'backups');
@@ -122,11 +123,14 @@ badwords: {
  coordinated: { minUsers: 5, windowSec: 10 },
  incidents: [],
  },
- rules: {
- rules: {
- R1: { title: 'Respect Everyone', description: 'Treat all members with respect. Harassment, insults, discrimination, intimidation, or abusive behavior are prohibited.', punishment: 'Warn', severity: 'medium', cooldown: 0, enabled: true },
- R2: { title: 'Respect Staff Decisions', description: 'Do not interfere with moderators or administrators while they are enforcing community rules.', punishment: 'Warn', severity: 'medium', cooldown: 0, enabled: true },
- R3: { title: 'Avoid Drama & Provocation', description: 'Do not intentionally create conflict, provoke arguments, spread rumors, or disrupt the community.', punishment: 'Warn', severity: 'medium', cooldown: 0, enabled: true },
- },
- },
+  rules: {
+  rules: {
+  R1: { title: 'Respect Everyone', description: 'Treat all members with respect. Harassment, insults, discrimination, intimidation, or abusive behavior are prohibited.', punishment: 'Warn', severity: 'medium', cooldown: 0, enabled: true },
+  R2: { title: 'Respect Staff Decisions', description: 'Do not interfere with moderators or administrators while they are enforcing community rules.', punishment: 'Warn', severity: 'medium', cooldown: 0, enabled: true },
+  R3: { title: 'Avoid Drama & Provocation', description: 'Do not intentionally create conflict, provoke arguments, spread rumors, or disrupt the community.', punishment: 'Warn', severity: 'medium', cooldown: 0, enabled: true },
+  },
+  },
+  bugreports: {
+  reports: [],
+  },
 });

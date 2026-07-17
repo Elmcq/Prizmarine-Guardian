@@ -19,9 +19,10 @@ export class DatabaseService {
  advertisement: { file: DB_FILES.advertisement, defaults: DEFAULTS.advertisement },
  raid: { file: DB_FILES.raid, defaults: DEFAULTS.raid },
  sticker: { file: DB_FILES.sticker, defaults: DEFAULTS.sticker },
- rules: { file: DB_FILES.rules, defaults: DEFAULTS.rules },
- audit: { file: DB_FILES.audit, defaults: DEFAULTS.audit },
- };
+    rules: { file: DB_FILES.rules, defaults: DEFAULTS.rules },
+    audit: { file: DB_FILES.audit, defaults: DEFAULTS.audit },
+    bugreports: { file: DB_FILES.bugreports, defaults: DEFAULTS.bugreports },
+  };
 
  for (const [name, { file, defaults }] of Object.entries(definitions)) {
  const dir = path.dirname(file);
@@ -70,8 +71,9 @@ export class DatabaseService {
  get raid() { return this.dbs.raid; }
  get sticker() { return this.dbs.sticker; }
  get rules() { return this.dbs.rules; }
- get audit() { return this.dbs.audit; }
- get backupDir() { return BACKUP_DIR; }
+  get audit() { return this.dbs.audit; }
+  get bugreports() { return this.dbs.bugreports; }
+  get backupDir() { return BACKUP_DIR; }
 }
 
 export default DatabaseService;

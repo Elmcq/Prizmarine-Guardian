@@ -1,5 +1,32 @@
 # Changelog
 
+## v1.1.3
+
+**Bug Report System — structured QA workflow**
+
+Status: Stable Feature Release
+
+### Added
+- `!reportbug` command — structured bug report form with title, description, example, expected, actual
+- `!bugs` command — list all bug reports with status filtering (admin only)
+- `!bugstatus` command — view report details or update status/priority (admin only)
+- Bug status lifecycle: 🟢 Open → 🔍 Investigating → 🛠 Fixing → 🧪 Testing → 🚀 Released → 🔴 Closed
+- Priority system: Low / Medium / High / Critical
+- Contributor credit system for changelog preparation
+- `BugReportRepository` — persistence layer for bug reports
+- `BugReportService` — business logic with formatted report output
+- 19 tests for repository, service, and full lifecycle
+- `authorName` added to command context for user display names
+
+### Changed
+- `src/config/constants.js` — added `bugreports` to DB_FILES and DEFAULTS
+- `src/database/DatabaseService.js` — added bugreports getter and initialization
+- `src/handlers/messageHandler.js` — added `authorName` to command context
+- `src/commands/index.js` — registered reportbug, bugs, bugstatus commands
+- `src/index.js` — wired BugReportRepository and BugReportService
+
+---
+
 ## v1.1.2
 
 **Literal Context Improvement — multi-meaning word detection**

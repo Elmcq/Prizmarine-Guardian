@@ -12,6 +12,7 @@ export function registerMessageHandler({ client, repos, services, config, logger
  const isGroup = Boolean(chat.isGroup);
  const authorId = message.author || message.from;
  const groupId = isGroup ? chat.id._serialized : null;
+ let authorName = authorId;
  if (contactResolver) {
  try {
  const contact = await message.getContact();
@@ -20,8 +21,10 @@ export function registerMessageHandler({ client, repos, services, config, logger
  if (contactId && contactName) await contactResolver.cacheProfile(contactId, contactName, 'contact');
  if (authorId && contactName && contactId !== authorId) await contactResolver.cacheProfile(authorId, contactName, 'contact');
  if (groupId && chat?.name) await contactResolver.cacheProfile(groupId, chat.name, 'group');
+ authorName = contactName || authorId;
  } catch (err) {
  logger.debug('Contact profile capture failed', { authorId, error: err.message });
+ authorName = authorId;
  }
  }
  await repos.settings.incMessagesSeen();
@@ -48,7 +51,7 @@ export function registerMessageHandler({ client, repos, services, config, logger
  await message.reply(UNAUTHORIZED_TEXT);
  return;
  }
- const ctx = { message, args, client, config, logger, eventBus, repos, services, rateLimiter, commandRegistry, chat, authorId, groupId, isAdmin, isOwner: ownerCheck, commandName: cmdName };
+  const ctx = { message, args, client, config, logger, eventBus, repos, services, rateLimiter, commandRegistry, chat, authorId, authorName, groupId, isAdmin, isOwner: ownerCheck, commandName: cmdName };
  try {
  await command.run(ctx);
  eventBus.emit(EVENTS.COMMAND_EXECUTED, { command: cmdName, authorId, groupId });
