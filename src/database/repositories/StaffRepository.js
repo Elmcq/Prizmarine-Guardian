@@ -14,6 +14,11 @@ export class StaffRepository {
   return this.db.data.records.find((r) => this.normalize(r.phone) === normalized) || null;
  }
 
+ findByAuthorId(authorId) {
+  if (!authorId) return null;
+  return this.db.data.records.find((r) => r.authorId === authorId) || null;
+ }
+
  findAll() {
   return this.db.data.records;
  }
@@ -29,7 +34,11 @@ export class StaffRepository {
  isStaffByAuthorId(authorId) {
   const cleaned = String(authorId).replace(/@(c\.us|lid)$/i, '').replace(/[^0-9]/g, '');
   if (!cleaned) return false;
-  return this.db.data.records.some((r) => this.normalize(r.phone) === cleaned);
+  return this.db.data.records.some((r) => {
+   if (this.normalize(r.phone) === cleaned) return true;
+   if (r.authorId && r.authorId === authorId) return true;
+   return false;
+  });
  }
 
  /**
@@ -69,6 +78,16 @@ export class StaffRepository {
 
  count() {
   return this.db.data.records.length;
+ }
+
+ async saveAuthorId(recordId, authorId) {
+  const record = this.db.data.records.find((r) => r.id === recordId);
+  if (record && !record.authorId) {
+   record.authorId = authorId;
+   await this.dbService.persist(this.db);
+   return true;
+  }
+  return false;
  }
 
  normalize(phone) {

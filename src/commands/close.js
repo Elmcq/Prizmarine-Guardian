@@ -1,8 +1,7 @@
 import { errorText, successText } from './messages.js';
 
 async function isAuthorizedStaff(ctx) {
- const isOwner = ctx.services.permission.isOwner(ctx.authorId);
- if (isOwner) return true;
+ if (ctx.isOwner) return true;
 
  if (ctx.services.staff.repo.isStaffByAuthorId(ctx.authorId)) return true;
 
@@ -10,7 +9,10 @@ async function isAuthorizedStaff(ctx) {
   const nameLower = ctx.authorName.toLowerCase().trim();
   const allStaff = ctx.services.staff.repo.findAll();
   for (const s of allStaff) {
-   if (s.name && nameLower.includes(s.name.toLowerCase().trim())) return true;
+   if (s.name && nameLower.includes(s.name.toLowerCase().trim())) {
+    await ctx.services.staff.repo.saveAuthorId(s.id, ctx.authorId);
+    return true;
+   }
   }
  }
 
