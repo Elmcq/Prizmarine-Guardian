@@ -6,11 +6,12 @@ async function isAuthorizedStaff(ctx) {
 
  if (ctx.services.staff.repo.isStaffByAuthorId(ctx.authorId)) return true;
 
- ctx.logger.info('Staff check debug', { authorId: ctx.authorId, authorName: ctx.authorName, type: typeof ctx.authorName });
-
- if (ctx.authorName && ctx.authorName !== ctx.authorId) {
-  const nameLower = ctx.authorName.toLowerCase().trim();
+ const nameToCheck = ctx.authorName || '';
+ console.log('[STAFF-CHECK]', JSON.stringify({ authorId: ctx.authorId, authorName: ctx.authorName, nameToCheck }));
+ if (nameToCheck) {
+  const nameLower = nameToCheck.toLowerCase().trim();
   const allStaff = ctx.services.staff.repo.findAll();
+  console.log('[STAFF-CHECK]', JSON.stringify({ nameLower, staffNames: allStaff.map(s => s.name) }));
   for (const s of allStaff) {
    if (s.name && nameLower.includes(s.name.toLowerCase().trim())) return true;
   }
