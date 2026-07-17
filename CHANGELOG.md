@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.1.5
+
+**Legacy Bug Report System Removed**
+
+Status: Cleanup Release
+
+### Removed
+- `!reportbug` command — structured bug report form
+- `!bugs` command — list all bug reports
+- `!bugstatus` command — view/update report details
+- `BugReportRepository` — persistence layer for bug reports
+- `BugReportService` — business logic with formatted report output
+- `bugreports` database definition from `DatabaseService.js`
+- `bugreports` constants from `constants.js`
+- `bugreports` wiring from `index.js`
+- 19 bug report tests
+
+### Reason
+Preparing migration to WhatsApp Ticket Support System.
+
+---
+
 ## v1.1.4
 
 **English Profanity Expansion — 2,700+ words from better-profane-words**

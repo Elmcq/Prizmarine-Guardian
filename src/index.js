@@ -17,7 +17,6 @@ import { RaidRepository } from './database/repositories/RaidRepository.js';
 import { StickerRepository } from './database/repositories/StickerRepository.js';
 import { RuleRepository } from './database/repositories/RuleRepository.js';
 import { AuditRepository } from './database/repositories/AuditRepository.js';
-import { BugReportRepository } from './database/repositories/BugReportRepository.js';
 import { ToxicityService } from './services/ToxicityService.js';
 import { ModerationService } from './services/ModerationService.js';
 import { SpamService } from './services/SpamService.js';
@@ -32,7 +31,6 @@ import { StickerService } from './services/StickerService.js';
 import { RuleService } from './services/RuleService.js';
 import { PermissionService } from './services/PermissionService.js';
 import { AuditService } from './services/AuditService.js';
-import { BugReportService } from './services/BugReportService.js';
 import { ContactResolver } from './services/ContactResolver.js';
 import { registerMessageHandler } from './handlers/messageHandler.js';
 import { registerReadyHandler } from './handlers/readyHandler.js';
@@ -62,9 +60,8 @@ async function bootstrap() {
  raid: new RaidRepository(db),
  sticker: new StickerRepository(db),
   rules: new RuleRepository(db),
-  audit: new AuditRepository(db),
-  bugreports: new BugReportRepository(db),
- };
+   audit: new AuditRepository(db),
+  };
 
  const toxicity = new ToxicityService(badwords, logger);
  const nsfwService = new NSFWService(repos.nsfw);
@@ -78,7 +75,6 @@ async function bootstrap() {
  const ruleService = new RuleService({ repo: repos.rules, logger, eventBus });
  const permissionService = new PermissionService({ config });
  const audit = new AuditService({ repo: repos.audit, eventBus, logger }).start();
- const bugReportService = new BugReportService({ repo: repos.bugreports, logger });
  const backup = new BackupService(db, { keep: 14 });
 
  const client = new Client({
@@ -89,7 +85,7 @@ async function bootstrap() {
  permissionService.setClient(client);
  const contactResolver = new ContactResolver(client, logger, repos.settings);
 
- const services = { toxicity, nsfw: nsfwService, advertisement: advertisementService, raid: raidService, sticker: stickerService, spam, moderation, health, backup, rule: ruleService, permission: permissionService, audit, bugReport: bugReportService };
+ const services = { toxicity, nsfw: nsfwService, advertisement: advertisementService, raid: raidService, sticker: stickerService, spam, moderation, health, backup, rule: ruleService, permission: permissionService, audit };
 
  registerMessageHandler({ client, repos, services, config, logger, eventBus, rateLimiter, commandRegistry, contactResolver });
  registerNSFWHandler({ client, repos, services, config, logger, eventBus, nsfwService });

@@ -20,8 +20,7 @@ export class DatabaseService {
  raid: { file: DB_FILES.raid, defaults: DEFAULTS.raid },
  sticker: { file: DB_FILES.sticker, defaults: DEFAULTS.sticker },
     rules: { file: DB_FILES.rules, defaults: DEFAULTS.rules },
-    audit: { file: DB_FILES.audit, defaults: DEFAULTS.audit },
-    bugreports: { file: DB_FILES.bugreports, defaults: DEFAULTS.bugreports },
+     audit: { file: DB_FILES.audit, defaults: DEFAULTS.audit },
   };
 
  for (const [name, { file, defaults }] of Object.entries(definitions)) {
@@ -72,7 +71,6 @@ export class DatabaseService {
  get sticker() { return this.dbs.sticker; }
  get rules() { return this.dbs.rules; }
   get audit() { return this.dbs.audit; }
-  get bugreports() { return this.dbs.bugreports; }
   get backupDir() { return BACKUP_DIR; }
 }
 
