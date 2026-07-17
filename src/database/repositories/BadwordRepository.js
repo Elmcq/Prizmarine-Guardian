@@ -20,24 +20,29 @@ export class BadwordRepository {
   await this.dbService.persist(this.db);
  }
 
-getSettings() {
- const d = this.db.data || {};
- const categories = this.getAll();
- const categoryCounts = Object.fromEntries(
-  Object.entries(categories)
-   .filter(([name]) => !['patterns', 'severity', 'config', 'negations', 'contextPatterns', 'targetPronouns'].includes(name))
-   .map(([name, entries]) => [name, entries.length]),
- );
- return {
-  enabled: this.isEnabled(),
-  warnLimit: d.warnLimit ?? 3,
-  highSeverityBan: Boolean(d.highSeverityBan),
-  categories: categoryCounts,
-  keywords: Object.values(categoryCounts).reduce((total, count) => total + count, 0),
-  patterns: categories.patterns?.length || 0,
-  contextualConfig: categories.config,
- };
-}
+ getSettings() {
+  const d = this.db.data || {};
+  const categories = this.getAll();
+  const categoryCounts = Object.fromEntries(
+   Object.entries(categories)
+    .filter(([name]) => !['patterns', 'severity', 'config', 'negations', 'contextPatterns', 'targetPronouns'].includes(name))
+    .map(([name, entries]) => [name, entries.length]),
+  );
+  const cfg = categories.config || {};
+  return {
+   enabled: this.isEnabled(),
+   warnLimit: d.warnLimit ?? 3,
+   highSeverityBan: Boolean(d.highSeverityBan),
+   toxicThreshold: cfg.toxicThreshold ?? 3,
+   cooldownDurationMs: cfg.cooldownDurationMs ?? 15000,
+   negationWindow: cfg.negationWindow ?? 3,
+   targetRequired: Boolean(cfg.targetRequired),
+   categories: categoryCounts,
+   keywords: Object.values(categoryCounts).reduce((total, count) => total + count, 0),
+   patterns: categories.patterns?.length || 0,
+   contextualConfig: cfg,
+  };
+ }
 
 async updateSettings(partial = {}) {
  const d = this.db.data;
