@@ -1,0 +1,192 @@
+import { describe, it, beforeEach } from 'node:test';
+import assert from 'node:assert/strict';
+import { TicketRepository } from '../src/database/repositories/TicketRepository.js';
+import { TicketService } from '../src/services/TicketService.js';
+
+function mockDb(records = []) {
+ const data = { records: [...records] };
+ return {
+  data,
+  read: async () => {},
+  write: async () => {},
+ };
+}
+
+function mockDbService(records = []) {
+ const db = mockDb(records);
+ return {
+  tickets: db,
+  persist: async () => {},
+  uuid: () => 'test-uuid',
+ };
+}
+
+function mockLogger() {
+ return { info: () => {}, warn: () => {}, error: () => {} };
+}
+
+describe('TicketRepository', () => {
+ let repo;
+ let dbService;
+
+ beforeEach(() => {
+  dbService = mockDbService();
+  repo = new TicketRepository(dbService);
+ });
+
+ it('create assigns id and default status Open', async () => {
+  const ticket = await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general', description: 'test' });
+  assert.equal(ticket.id, 'TKT-0001');
+  assert.equal(ticket.status, 'Open');
+  assert.equal(ticket.userId, 'user1@c.us');
+ });
+
+ it('create stores category', async () => {
+  const ticket = await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'technical', description: 'bug' });
+  assert.equal(ticket.category, 'technical');
+ });
+
+ it('create defaults invalid category to general', async () => {
+  const ticket = await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'invalid', description: '' });
+  assert.equal(ticket.category, 'general');
+ });
+
+ it('findById returns correct ticket', async () => {
+  await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  await repo.create({ id: 'TKT-0002', userId: 'user2@c.us', category: 'technical' });
+  const found = repo.findById('TKT-0002');
+  assert.equal(found.id, 'TKT-0002');
+  assert.equal(found.userId, 'user2@c.us');
+ });
+
+ it('findById returns null for missing', async () => {
+  assert.equal(repo.findById('TKT-9999'), null);
+ });
+
+ it('findByUser returns all tickets for user', async () => {
+  await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  await repo.create({ id: 'TKT-0002', userId: 'user1@c.us', category: 'technical' });
+  await repo.create({ id: 'TKT-0003', userId: 'user2@c.us', category: 'general' });
+  const tickets = repo.findByUser('user1@c.us');
+  assert.equal(tickets.length, 2);
+ });
+
+ it('findOpenByUser returns only open tickets', async () => {
+  await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  await repo.create({ id: 'TKT-0002', userId: 'user1@c.us', category: 'technical' });
+  await repo.close('TKT-0001', 'admin@c.us');
+  const open = repo.findOpenByUser('user1@c.us');
+  assert.equal(open.length, 1);
+  assert.equal(open[0].id, 'TKT-0002');
+ });
+
+ it('close sets status Closed and closedBy', async () => {
+  await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  const closed = await repo.close('TKT-0001', 'admin@c.us');
+  assert.equal(closed.status, 'Closed');
+  assert.equal(closed.closedBy, 'admin@c.us');
+  assert.ok(closed.closedAt);
+ });
+
+ it('close returns null for missing ticket', async () => {
+  const result = await repo.close('TKT-9999', 'admin@c.us');
+  assert.equal(result, null);
+ });
+
+ it('reopen sets status back to Open', async () => {
+  await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  await repo.close('TKT-0001', 'admin@c.us');
+  const reopened = await repo.reopen('TKT-0001');
+  assert.equal(reopened.status, 'Open');
+  assert.equal(reopened.closedAt, null);
+ });
+
+ it('count returns total tickets', async () => {
+  await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  await repo.create({ id: 'TKT-0002', userId: 'user2@c.us', category: 'technical' });
+  assert.equal(repo.count(), 2);
+ });
+
+ it('getStats counts by status and category', async () => {
+  await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  await repo.create({ id: 'TKT-0002', userId: 'user2@c.us', category: 'technical' });
+  await repo.create({ id: 'TKT-0003', userId: 'user3@c.us', category: 'general' });
+  await repo.close('TKT-0002', 'admin@c.us');
+  const stats = repo.getStats();
+  assert.equal(stats.total, 3);
+  assert.equal(stats.open, 2);
+  assert.equal(stats.closed, 1);
+  assert.equal(stats.byCategory.general, 2);
+  assert.equal(stats.byCategory.technical, 1);
+ });
+
+ it('setChatId updates chatId', async () => {
+  await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  const updated = await repo.setChatId('TKT-0001', 'group-chat@g.us');
+  assert.equal(updated.chatId, 'group-chat@g.us');
+ });
+});
+
+describe('TicketService', () => {
+ let service;
+ let repo;
+
+ beforeEach(() => {
+  const dbService = mockDbService();
+  repo = new TicketRepository(dbService);
+  service = new TicketService({ repo, logger: mockLogger() });
+ });
+
+ it('generateId produces TKT-0001 for empty repo', () => {
+  assert.equal(service.generateId(), 'TKT-0001');
+ });
+
+ it('generateId increments', async () => {
+  await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  assert.equal(service.generateId(), 'TKT-0002');
+ });
+
+ it('create returns ticket with generated id', async () => {
+  const ticket = await service.create({ userId: 'user1@c.us', category: 'general', description: 'help' });
+  assert.equal(ticket.id, 'TKT-0001');
+  assert.equal(ticket.status, 'Open');
+  assert.equal(ticket.description, 'help');
+ });
+
+ it('close marks ticket as Closed', async () => {
+  await service.create({ userId: 'user1@c.us', category: 'technical' });
+  const closed = await service.close('TKT-0001', 'admin@c.us');
+  assert.equal(closed.status, 'Closed');
+ });
+
+ it('formatTicket produces readable text', async () => {
+  const ticket = await service.create({ userId: 'user1@c.us', category: 'abuse', description: 'harassment' });
+  const text = service.formatTicket(ticket);
+  assert.ok(text.includes('TKT-0001'));
+  assert.ok(text.includes('Abuse Report'));
+  assert.ok(text.includes('🟢 Open'));
+ });
+
+ it('formatList produces readable text', async () => {
+  await service.create({ userId: 'user1@c.us', category: 'general' });
+  await service.create({ userId: 'user2@c.us', category: 'technical' });
+  const text = service.formatList(repo.findAll());
+  assert.ok(text.includes('TKT-0001'));
+  assert.ok(text.includes('TKT-0002'));
+ });
+
+ it('formatList returns message when empty', () => {
+  const text = service.formatList([]);
+  assert.equal(text, '📋 No tickets found.');
+ });
+
+ it('formatStats shows totals', async () => {
+  await service.create({ userId: 'user1@c.us', category: 'general' });
+  await service.create({ userId: 'user2@c.us', category: 'technical' });
+  await service.close('TKT-0001', 'admin@c.us');
+  const text = service.formatStats();
+  assert.ok(text.includes('Total: 2'));
+  assert.ok(text.includes('Open: 1'));
+  assert.ok(text.includes('Closed: 1'));
+ });
+});

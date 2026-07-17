@@ -18,6 +18,7 @@ export const DB_FILES = Object.freeze({
  sticker: path.join(DATA_DIR, 'sticker.json'),
   rules: path.join(DATA_DIR, 'rules.json'),
    audit: path.join(DATA_DIR, 'audit.json'),
+   tickets: path.join(DATA_DIR, 'tickets.json'),
 });
 
 export const BACKUP_DIR = path.join(DATA_DIR, 'backups');
@@ -128,5 +129,8 @@ badwords: {
   R2: { title: 'Respect Staff Decisions', description: 'Do not interfere with moderators or administrators while they are enforcing community rules.', punishment: 'Warn', severity: 'medium', cooldown: 0, enabled: true },
   R3: { title: 'Avoid Drama & Provocation', description: 'Do not intentionally create conflict, provoke arguments, spread rumors, or disrupt the community.', punishment: 'Warn', severity: 'medium', cooldown: 0, enabled: true },
   },
+  },
+  tickets: {
+  records: [],
   },
 });

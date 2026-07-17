@@ -29,6 +29,10 @@ import deleterule from './deleterule.js';
 import exportrules from './exportrules.js';
 import kick from './kick.js';
 import tempban from './tempban.js';
+import ticket from './ticket.js';
+import myticket from './myticket.js';
+import close from './close.js';
+
 const modules = [
  warn,
  clearwarn,
@@ -61,6 +65,9 @@ const modules = [
  exportrules,
  kick,
  tempban,
+ ticket,
+ myticket,
+ close,
 ];
 
 export const commandRegistry = new Map();

@@ -1,5 +1,30 @@
 # Changelog
 
+## v1.2.0
+
+**WhatsApp Ticket Support System**
+
+Status: Feature Release
+
+### Added
+- `!ticket <category> [description]` — create a support ticket (categories: general, technical, abuse, feature, other)
+- `!myticket` — view your open and closed tickets
+- `!close <ticketId>` — close a support ticket (staff only)
+- Auto-generated ticket IDs (TKT-0001 format)
+- Ticket status: Open / Closed
+- Per-user open ticket limit (max 3)
+- `TicketRepository` — persistence layer for tickets (data/tickets.json)
+- `TicketService` — business logic with formatted output
+- 21 tests for repository and service (57/57 total passing)
+
+### Changed
+- `src/config/constants.js` — added `tickets` to DB_FILES and DEFAULTS
+- `src/database/DatabaseService.js` — added tickets getter and initialization
+- `src/index.js` — wired TicketRepository and TicketService
+- `src/commands/index.js` — registered ticket, myticket, close commands
+
+---
+
 ## v1.1.5
 
 **Legacy Bug Report System Removed**

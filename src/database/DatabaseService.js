@@ -21,6 +21,7 @@ export class DatabaseService {
  sticker: { file: DB_FILES.sticker, defaults: DEFAULTS.sticker },
     rules: { file: DB_FILES.rules, defaults: DEFAULTS.rules },
      audit: { file: DB_FILES.audit, defaults: DEFAULTS.audit },
+    tickets: { file: DB_FILES.tickets, defaults: DEFAULTS.tickets },
   };
 
  for (const [name, { file, defaults }] of Object.entries(definitions)) {
@@ -71,6 +72,7 @@ export class DatabaseService {
  get sticker() { return this.dbs.sticker; }
  get rules() { return this.dbs.rules; }
   get audit() { return this.dbs.audit; }
+  get tickets() { return this.dbs.tickets; }
   get backupDir() { return BACKUP_DIR; }
 }
 
