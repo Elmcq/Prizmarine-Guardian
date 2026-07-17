@@ -15,11 +15,12 @@ const CATEGORY_LABELS = {
 const DIVIDER = '━━━━━━━━━━━━━━';
 
 export class TicketService {
- constructor({ repo, logger, client = null, staffRepo = null }) {
+ constructor({ repo, logger, client = null, staffRepo = null, contactResolver = null }) {
   this.repo = repo;
   this.logger = logger;
   this.client = client;
   this.staffRepo = staffRepo;
+  this.contactResolver = contactResolver;
  }
 
  setClient(client) {
@@ -66,13 +67,10 @@ export class TicketService {
    const groupName = `PRIZMARINE TICKET ${ticket.id}`;
 
     const participants = [];
-    if (this.client) {
-     try {
-      const creatorContact = await this.client.getContactById(ticket.userId);
-      if (creatorContact?.number) {
-       participants.push(`${creatorContact.number}@c.us`);
-      }
-     } catch {}
+    const creatorPhone = this.contactResolver?.getPhone?.(ticket.userId);
+    if (creatorPhone) {
+     const phone = creatorPhone.replace(/[^0-9]/g, '');
+     if (phone) participants.push(`${phone}@c.us`);
     }
     if (this.staffRepo) {
      const staffList = this.staffRepo.findAll();

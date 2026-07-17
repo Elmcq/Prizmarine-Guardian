@@ -21,6 +21,7 @@ export function registerMessageHandler({ client, repos, services, config, logger
  if (contactId && contactName) await contactResolver.cacheProfile(contactId, contactName, 'contact');
  if (authorId && contactName && contactId !== authorId) await contactResolver.cacheProfile(authorId, contactName, 'contact');
  if (groupId && chat?.name) await contactResolver.cacheProfile(groupId, chat.name, 'group');
+ if (authorId && contact?.number) contactResolver.cachePhone(authorId, contact.number);
  authorName = contactName || authorId;
  } catch (err) {
  logger.debug('Contact profile capture failed', { authorId, error: err.message });

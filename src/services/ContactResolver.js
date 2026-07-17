@@ -1,15 +1,16 @@
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
 export class ContactResolver {
- constructor(client, logger, settings = null) {
+constructor(client, logger, settings = null) {
  this.client = client;
  this.logger = logger;
  this.settings = settings;
  this.cache = new Map();
+ this.phoneCache = new Map();
  for (const [id, profile] of Object.entries(settings?.getContactProfiles?.() || {})) {
- if (profile?.name) this.cache.set(id, { name: profile.name, type: profile.type, ts: profile.updatedAt || 0 });
+  if (profile?.name) this.cache.set(id, { name: profile.name, type: profile.type, ts: profile.updatedAt || 0 });
  }
- }
+}
 
  setClient(client) {
  this.client = client;
@@ -44,7 +45,16 @@ export class ContactResolver {
  }
 
  cacheName(id, name, type = 'contact') {
- this.cacheProfile(id, name, type).catch(() => {});
+  this.cacheProfile(id, name, type).catch(() => {});
+ }
+
+ cachePhone(id, phone) {
+  if (!id || !phone) return;
+  this.phoneCache.set(id, phone);
+ }
+
+ getPhone(id) {
+  return this.phoneCache.get(id) || null;
  }
 
  async _fetchProfile(id) {

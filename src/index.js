@@ -93,6 +93,7 @@ async function bootstrap() {
  permissionService.setClient(client);
  ticketService.setClient(client);
  const contactResolver = new ContactResolver(client, logger, repos.settings);
+ ticketService.contactResolver = contactResolver;
 
  const services = { toxicity, nsfw: nsfwService, advertisement: advertisementService, raid: raidService, sticker: stickerService, spam, moderation, health, backup, rule: ruleService, permission: permissionService, audit, ticket: ticketService, staff: staffService };
 

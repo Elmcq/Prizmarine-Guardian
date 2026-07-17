@@ -267,8 +267,8 @@ describe('TicketService — group creation', () => {
 
  it('createTicketGroup includes staff in participants', async () => {
   let capturedParticipants;
+   const contactResolver = { getPhone: (id) => id === '6289999999999@c.us' ? '6289999999999' : null };
    const client = {
-    getContactById: async (id) => ({ number: '6289999999999' }),
     createGroup: async (name, participants) => {
      capturedParticipants = participants;
      return { gid: { _serialized: 'group-123@g.us' } };
@@ -279,7 +279,7 @@ describe('TicketService — group creation', () => {
    { phone: '6281111111111', name: 'Staff1' },
    { phone: '6282222222222', name: 'Staff2' },
   ]);
-  service = new TicketService({ repo, logger: mockLogger(), client, staffRepo });
+  service = new TicketService({ repo, logger: mockLogger(), client, staffRepo, contactResolver });
   const ticket = await repo.create({ id: 'TKT-0001', userId: '6289999999999@c.us', category: 'general' });
   await service.createTicketGroup(ticket);
    assert.ok(capturedParticipants.includes('6289999999999@c.us'));
@@ -310,25 +310,8 @@ describe('TicketService — group creation', () => {
 
  it('createTicketGroup resolves LID creator to phone', async () => {
   let capturedParticipants;
-  const client = {
-   getContactById: async (id) => {
-    if (id === '12345@lid') return { number: '628123456789' };
-    return null;
-   },
-   createGroup: async (name, participants) => {
-    capturedParticipants = participants;
-    return { gid: { _serialized: 'group-123@g.us' } };
-   },
-   sendMessage: async () => {},
-  };
-  service = new TicketService({ repo, logger: mockLogger(), client });
-  const ticket = await repo.create({ id: 'TKT-0001', userId: '12345@lid', category: 'general' });
-  await service.createTicketGroup(ticket);
-  assert.ok(capturedParticipants.includes('628123456789@c.us'));
- });
-
- it('createTicketGroup skips creator when LID cannot be resolved', async () => {
-  let capturedParticipants;
+  const phoneCache = new Map([['12345@lid', '628123456789']]);
+  const contactResolver = { getPhone: (id) => phoneCache.get(id) || null };
   const client = {
    getContactById: async () => null,
    createGroup: async (name, participants) => {
@@ -337,7 +320,24 @@ describe('TicketService — group creation', () => {
    },
    sendMessage: async () => {},
   };
-  service = new TicketService({ repo, logger: mockLogger(), client });
+  service = new TicketService({ repo, logger: mockLogger(), client, contactResolver });
+  const ticket = await repo.create({ id: 'TKT-0001', userId: '12345@lid', category: 'general' });
+  await service.createTicketGroup(ticket);
+  assert.ok(capturedParticipants.includes('628123456789@c.us'));
+ });
+
+ it('createTicketGroup skips creator when phone not cached', async () => {
+  let capturedParticipants;
+  const contactResolver = { getPhone: () => null };
+  const client = {
+   getContactById: async () => null,
+   createGroup: async (name, participants) => {
+    capturedParticipants = participants;
+    return { gid: { _serialized: 'group-123@g.us' } };
+   },
+   sendMessage: async () => {},
+  };
+  service = new TicketService({ repo, logger: mockLogger(), client, contactResolver });
   const ticket = await repo.create({ id: 'TKT-0001', userId: '12345@lid', category: 'general' });
   const result = await service.createTicketGroup(ticket);
   assert.equal(result.chatId, 'group-123@g.us');
