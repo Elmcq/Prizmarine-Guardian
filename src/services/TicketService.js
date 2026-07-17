@@ -66,8 +66,14 @@ export class TicketService {
    const groupName = `PRIZMARINE TICKET ${ticket.id}`;
 
     const participants = [];
-    const creatorPhone = ticket.userId.replace(/@(c\.us|lid)$/i, '').replace(/[^0-9]/g, '');
-    if (creatorPhone) participants.push(`${creatorPhone}@c.us`);
+    if (this.client) {
+     try {
+      const creatorContact = await this.client.getContactById(ticket.userId);
+      if (creatorContact?.number) {
+       participants.push(`${creatorContact.number}@c.us`);
+      }
+     } catch {}
+    }
     if (this.staffRepo) {
      const staffList = this.staffRepo.findAll();
      for (const s of staffList) {

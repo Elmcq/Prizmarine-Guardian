@@ -29,6 +29,7 @@ function mockClient(createGroupResult = { gid: { _serialized: 'group-123@g.us' }
  return {
   createGroup: async () => createGroupResult,
   sendMessage: async () => {},
+  getContactById: async () => ({ number: '123456789' }),
  };
 }
 
@@ -267,6 +268,7 @@ describe('TicketService — group creation', () => {
  it('createTicketGroup includes staff in participants', async () => {
   let capturedParticipants;
    const client = {
+    getContactById: async (id) => ({ number: '6289999999999' }),
     createGroup: async (name, participants) => {
      capturedParticipants = participants;
      return { gid: { _serialized: 'group-123@g.us' } };
@@ -304,6 +306,42 @@ describe('TicketService — group creation', () => {
   const result = await service.createTicketGroup(ticket);
   assert.equal(result.chatId, null);
   assert.ok(result.error.includes('Failed to get group ID'));
+ });
+
+ it('createTicketGroup resolves LID creator to phone', async () => {
+  let capturedParticipants;
+  const client = {
+   getContactById: async (id) => {
+    if (id === '12345@lid') return { number: '628123456789' };
+    return null;
+   },
+   createGroup: async (name, participants) => {
+    capturedParticipants = participants;
+    return { gid: { _serialized: 'group-123@g.us' } };
+   },
+   sendMessage: async () => {},
+  };
+  service = new TicketService({ repo, logger: mockLogger(), client });
+  const ticket = await repo.create({ id: 'TKT-0001', userId: '12345@lid', category: 'general' });
+  await service.createTicketGroup(ticket);
+  assert.ok(capturedParticipants.includes('628123456789@c.us'));
+ });
+
+ it('createTicketGroup skips creator when LID cannot be resolved', async () => {
+  let capturedParticipants;
+  const client = {
+   getContactById: async () => null,
+   createGroup: async (name, participants) => {
+    capturedParticipants = participants;
+    return { gid: { _serialized: 'group-123@g.us' } };
+   },
+   sendMessage: async () => {},
+  };
+  service = new TicketService({ repo, logger: mockLogger(), client });
+  const ticket = await repo.create({ id: 'TKT-0001', userId: '12345@lid', category: 'general' });
+  const result = await service.createTicketGroup(ticket);
+  assert.equal(result.chatId, 'group-123@g.us');
+  assert.ok(!capturedParticipants.some(p => p.startsWith('12345')));
  });
 
  it('sendWelcomeMessage does not throw on error', async () => {
