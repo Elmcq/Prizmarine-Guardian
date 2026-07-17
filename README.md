@@ -16,7 +16,9 @@ repeat offenders — while also defending groups against spam and message floodi
 
 - **Anti-Toxic detection** — Indonesian / English profanity, slurs, hate speech, harassment and
   spam insults. Word lists live in `data/badwords.json` (never hard-coded) and are matched
-  case-insensitively with diacritic & light leetspeak tolerance.
+  case-insensitively with diacritic & light leetspeak tolerance. A **7-stage Contextual Moderation
+  Pipeline** (v1.1.0) analyzes negation, quotation, discussion context, target detection, and
+  per-keyword severity scoring to dramatically reduce false positives.
 - **Warning system** — every offence deletes the message (when permitted) and posts a ⚠️ warning
   with the offender `@mentioned` and their `n/3` progress. Warnings persist permanently.
 - **Auto-ban** — at the warning limit the user is removed from the group and banned for
@@ -68,6 +70,95 @@ repeat offenders — while also defending groups against spam and message floodi
   a health heartbeat, and runtime statistics.
 - **Reliability** — automatic backup every 12h, graceful shutdown, QR authentication,
   automatic reconnect, and an event-based architecture.
+
+---
+
+## 🧠 Contextual Moderation Pipeline (v1.1.0 / v1.1.1)
+
+The AntiToxic module uses a **7-stage rule-based pipeline** to reduce false positives while
+catching real toxic messages. Each message passes through all stages before a decision is made.
+
+### Pipeline stages
+
+| Stage | Name | What it does |
+| ----- | ---- | ------------ |
+| 1 | **Normalize** | Lowercase, strip WhatsApp formatting (bold/italic/emoji), normalize diacritics & leetspeak |
+| 2 | **Keyword Detection** | Match against severity-weighted keyword lists from `data/badwords.json` |
+| 3 | **Context Analysis** | Detect safe contexts: quotation (`kata "goblok"`), discussion (`kata goblok termasuk...`), educational, criticism, entity protection (presiden/pejabat/tokoh) |
+| 4 | **Negation Detection** | Detect negation words (`tidak`, `bukan`, `jangan`, `ga`, etc.) within the negation window |
+| 5 | **Target Detection** | Check for `@mentions`, pronouns (`kamu`/`lu`/`dia`), replies, or direct address patterns |
+| 6 | **Score Calculation** | Compute `toxicScore` from severity + context adjustments + negation reduction + target bonus |
+| 7 | **Decision Engine** | Map score to action: `IGNORE` / `LOG_ONLY` / `WARNING` / `MUTE` / `BAN` |
+
+### Score calculation
+
+```
+baseScore  = matched keyword severity (0–10)
+contextAdj = quotation (-6), discussion (-5), explaining (-4), criticism (-3), entityProtection (-3)
+negation   = negationPenalty × matchedNegations (default: -5 each)
+target     = hasTarget ? +2 : 0
+directAtk  = (hasTarget && no safe context) ? +1 : 0
+
+toxicScore = max(0, baseScore + contextAdj + negation + target + directAtk)
+```
+
+### Decision thresholds
+
+| Score range | Decision |
+| ----------- | -------- |
+| `< toxicThreshold` | `IGNORE` |
+| `≥ toxicThreshold` (no target, safe context) | `LOG_ONLY` |
+| `≥ toxicThreshold` | `WARNING` |
+| `≥ toxicThreshold × 2` | `MUTE` |
+| `≥ 10` or warn limit reached | `BAN` |
+
+### Dashboard configuration
+
+All thresholds are configurable from the web dashboard:
+
+| Field | Default | Description |
+| ----- | ------- | ----------- |
+| Toxic score threshold | `3` | Minimum score to trigger a warning |
+| Warning cooldown (ms) | `15000` | Cooldown per user+word to avoid duplicate warnings |
+| Negation window (words) | `3` | How many words after a negation still reduce the score |
+| Require target for warning | checked | Only warn when a target (mention/reply/pronoun) is detected |
+
+### `data/badwords.json` structure
+
+```json
+{
+  "indonesian": ["goblok", "bangsat", "anjing"],
+  "english": ["fuck", "shit"],
+  "severity": { "goblok": 4, "bangsat": 8, "anjing": 7 },
+  "config": {
+    "toxicThreshold": 3,
+    "cooldownDurationMs": 15000,
+    "negationWindow": 3,
+    "targetRequired": false
+  },
+  "negations": ["tidak", "bukan", "jangan", "ga", "gak"],
+  "contextPatterns": {
+    "quoting": ["kata", "bilang"],
+    "quotation": ["\".*\"", "'.*'"],
+    "explaining": ["adalah", "termasuk"],
+    "discussion": ["kata .* termasuk", "arti kata"],
+    "criticism": ["kritik"],
+    "entityProtection": ["presiden", "pejabat", "tokoh"],
+    "warning": ["jangan"],
+    "educational": ["belajar"]
+  },
+  "targetPronouns": ["kamu", "lu", "dia"]
+}
+```
+
+### What this prevents
+
+| Before (v1.0) | After (v1.1) |
+| -------------- | ------------ |
+| `"tidak goblok"` → ⚠️ WARNING | `"tidak goblok"` → IGNORE (negation detected) |
+| `"kata goblok artinya bodoh"` → ⚠️ WARNING | `"kata goblok artinya bodoh"` → IGNORE (discussion context) |
+| `"dia bilang goblok"` → ⚠️ WARNING | `"dia bilang goblok"` → IGNORE (quotation context) |
+| `"dasar goblok"` → 🚫 MUTE | `"dasar goblok"` → ⚠️ WARNING (correct severity level) |
 
 ---
 
@@ -637,7 +728,7 @@ prizmarine-anti-toxic/
 │   ├── handlers/           # WhatsApp event wiring (message, ready, connection)
 │   ├── commands/           # One module per command + the registry
 │   ├── database/           # DatabaseService (lowdb wrapper) + repositories
-│   ├── services/           # Toxicity, Moderation, Spam, RateLimiter, Backup, Health, Scheduler
+│   ├── services/           # Toxicity, ContextualModerationPipeline, Moderation, Spam, RateLimiter, Backup, Health, Scheduler
 │   ├── web/                # Optional Express dashboard (auth, schemas, routes, factory)
 │   ├── middleware/         # auth, rate-limit, cooldown
 │   ├── utils/              # sanitize, time, mentions, formatter
@@ -737,3 +828,12 @@ https://chat.whatsapp.com/XXXXXXXXXXXX
 
 This tool is intended for groups you own or administer. Automating a WhatsApp account may violate
 WhatsApp's Terms of Service; use it responsibly and at your own risk.
+
+---
+
+## Contributors
+
+Special thanks:
+
+* **@Yoga** — Reported initial false positive detection issue in v1.1.0
+* **@Altan** — QA testing and discovered additional context detection issues for v1.1.1
