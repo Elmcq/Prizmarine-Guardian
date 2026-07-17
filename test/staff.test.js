@@ -97,6 +97,33 @@ describe('StaffRepository', () => {
   const found = repo.findByPhone('628123456789');
   assert.equal(found.name, 'Azzam');
  });
+
+ // Regression test: staff added with phone can be found via WhatsApp authorId
+ it('isStaffByAuthorId matches staff by phone (with @c.us)', async () => {
+  await repo.add('6285853215994', 'Yoga');
+  assert.equal(repo.isStaffByAuthorId('6285853215994@c.us'), true);
+ });
+
+ it('isStaffByAuthorId matches staff by phone (with @lid)', async () => {
+  await repo.add('6285853215994', 'Yoga');
+  assert.equal(repo.isStaffByAuthorId('6285853215994@lid'), true);
+ });
+
+ it('isStaffByAuthorId matches staff by phone (no suffix)', async () => {
+  await repo.add('6285853215994', 'Yoga');
+  assert.equal(repo.isStaffByAuthorId('6285853215994'), true);
+ });
+
+ it('isStaffByAuthorId returns false for unregistered user', async () => {
+  await repo.add('6285853215994', 'Yoga');
+  assert.equal(repo.isStaffByAuthorId('6289999999999@c.us'), false);
+ });
+
+ it('isStaffByAuthorId handles empty input', async () => {
+  assert.equal(repo.isStaffByAuthorId(''), false);
+  assert.equal(repo.isStaffByAuthorId(null), false);
+  assert.equal(repo.isStaffByAuthorId(undefined), false);
+ });
 });
 
 describe('StaffService', () => {

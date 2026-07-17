@@ -22,6 +22,16 @@ export class StaffRepository {
   return this.findByPhone(phone) !== null;
  }
 
+ /**
+  * Check if a WhatsApp authorId (e.g. "12345@c.us" or "12345@lid") matches any staff.
+  * Strips @c.us, @lid, and non-numeric characters before matching.
+  */
+ isStaffByAuthorId(authorId) {
+  const cleaned = String(authorId).replace(/@(c\.us|lid)$/i, '').replace(/[^0-9]/g, '');
+  if (!cleaned) return false;
+  return this.db.data.records.some((r) => this.normalize(r.phone) === cleaned);
+ }
+
  async add(phone, name, role = 'support') {
   if (this.findByPhone(phone)) return null;
   const record = {

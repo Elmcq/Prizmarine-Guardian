@@ -33,17 +33,33 @@ export default {
 
   ctx.logger.info('Ticket created', { ticketId: ticket.id, userId, category });
 
+  let groupResult = null;
+  try {
+   groupResult = await ctx.services.ticket.createTicketGroup(ticket);
+  } catch (err) {
+   ctx.logger.error('Ticket group creation failed', { ticketId: ticket.id, error: err.message });
+  }
+
   const lines = [
    `🎫 *Ticket Created*`,
    '',
    `ID: *${ticket.id}*`,
    `Category: ${category.charAt(0).toUpperCase() + category.slice(1)}`,
    description ? `Description: ${description}` : null,
+  ];
+
+  if (groupResult?.chatId) {
+   lines.push(`Group: ${groupResult.chatId}`);
+  } else if (groupResult?.error) {
+   lines.push(`Group: Failed to create (${groupResult.error})`);
+  }
+
+  lines.push(
    '',
    `Use *!myticket* to view your tickets.`,
    `Use *!close ${ticket.id}* to close this ticket.`,
-  ].filter(Boolean);
+  );
 
-  await ctx.message.reply(lines.join('\n'));
+  await ctx.message.reply(lines.filter(Boolean).join('\n'));
  },
 };

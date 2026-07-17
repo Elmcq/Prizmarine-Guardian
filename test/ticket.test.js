@@ -25,6 +25,21 @@ function mockLogger() {
  return { info: () => {}, warn: () => {}, error: () => {} };
 }
 
+function mockClient(createGroupResult = { gid: { _serialized: 'group-123@g.us' } }) {
+ return {
+  createGroup: async () => createGroupResult,
+  getChatById: async () => ({
+   sendMessage: async () => {},
+  }),
+ };
+}
+
+function mockStaffRepo(staff = []) {
+ return {
+  findAll: () => staff,
+ };
+}
+
 describe('TicketRepository', () => {
  let repo;
  let dbService;
@@ -188,5 +203,100 @@ describe('TicketService', () => {
   assert.ok(text.includes('Total: 2'));
   assert.ok(text.includes('Open: 1'));
   assert.ok(text.includes('Closed: 1'));
+ });
+});
+
+describe('TicketService — group creation', () => {
+ let service;
+ let repo;
+
+ beforeEach(() => {
+  const dbService = mockDbService();
+  repo = new TicketRepository(dbService);
+ });
+
+ it('createTicketGroup returns error when no client', async () => {
+  service = new TicketService({ repo, logger: mockLogger() });
+  const ticket = await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  const result = await service.createTicketGroup(ticket);
+  assert.equal(result.chatId, null);
+  assert.ok(result.error.includes('not available'));
+ });
+
+ it('createTicketGroup creates group and sets chatId', async () => {
+  const client = mockClient({ gid: { _serialized: 'group-123@g.us' } });
+  service = new TicketService({ repo, logger: mockLogger(), client });
+  const ticket = await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  const result = await service.createTicketGroup(ticket);
+  assert.equal(result.chatId, 'group-123@g.us');
+  assert.equal(result.error, null);
+  const updated = repo.findById('TKT-0001');
+  assert.equal(updated.chatId, 'group-123@g.us');
+ });
+
+ it('createTicketGroup includes staff in participants', async () => {
+  let capturedParticipants;
+  const client = {
+   createGroup: async (name, participants) => {
+    capturedParticipants = participants;
+    return { gid: { _serialized: 'group-123@g.us' } };
+   },
+   getChatById: async () => ({ sendMessage: async () => {} }),
+  };
+  const staffRepo = mockStaffRepo([
+   { phone: '6281111111111', name: 'Staff1' },
+   { phone: '6282222222222', name: 'Staff2' },
+  ]);
+  service = new TicketService({ repo, logger: mockLogger(), client, staffRepo });
+  const ticket = await repo.create({ id: 'TKT-0001', userId: '6289999999999@c.us', category: 'general' });
+  await service.createTicketGroup(ticket);
+  assert.ok(capturedParticipants.includes('6289999999999'));
+  assert.ok(capturedParticipants.includes('6281111111111'));
+  assert.ok(capturedParticipants.includes('6282222222222'));
+ });
+
+ it('createTicketGroup handles API error gracefully', async () => {
+  const client = {
+   createGroup: async () => { throw new Error('WhatsApp API error'); },
+   getChatById: async () => ({ sendMessage: async () => {} }),
+  };
+  service = new TicketService({ repo, logger: mockLogger(), client });
+  const ticket = await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  const result = await service.createTicketGroup(ticket);
+  assert.equal(result.chatId, null);
+  assert.ok(result.error.includes('WhatsApp API error'));
+ });
+
+ it('createTicketGroup handles missing gid gracefully', async () => {
+  const client = mockClient({ gid: null });
+  service = new TicketService({ repo, logger: mockLogger(), client });
+  const ticket = await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  const result = await service.createTicketGroup(ticket);
+  assert.equal(result.chatId, null);
+  assert.ok(result.error.includes('Failed to get group ID'));
+ });
+
+ it('sendWelcomeMessage does not throw on error', async () => {
+  const client = {
+   getChatById: async () => { throw new Error('Chat not found'); },
+  };
+  service = new TicketService({ repo, logger: mockLogger(), client });
+  const ticket = await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  await service.sendWelcomeMessage('group-123@g.us', ticket);
+ });
+
+ it('sendWelcomeMessage sends formatted message', async () => {
+  let sentMessage;
+  const client = {
+   getChatById: async () => ({
+    sendMessage: async (msg) => { sentMessage = msg; },
+   }),
+  };
+  service = new TicketService({ repo, logger: mockLogger(), client });
+  const ticket = await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'technical', description: 'Bug in login' });
+  await service.sendWelcomeMessage('group-123@g.us', ticket);
+  assert.ok(sentMessage.includes('TKT-0001'));
+  assert.ok(sentMessage.includes('Technical Issue'));
+  assert.ok(sentMessage.includes('Bug in login'));
  });
 });

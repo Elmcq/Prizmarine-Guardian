@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.2.2
+
+**Ticket Staff Permission Fix**
+
+Status: Bug Fix Release
+
+### Fixed
+- `!tickets` and `!close` now check staff registration instead of WhatsApp admin status
+- Staff added with `!addstaff` can now use ticket commands
+- WhatsApp IDs normalized (strips `@c.us`, `@lid` suffixes) for staff lookup
+
+### Added
+- `isStaffByAuthorId()` method on StaffRepository for WhatsApp ID matching
+- Regression tests for staff permission checks (88/88 total passing)
+
+### Changed
+- `src/commands/tickets.js` — `adminOnly: false`, custom staff permission check
+- `src/commands/close.js` — `adminOnly: false`, custom staff permission check
+- `src/database/repositories/StaffRepository.js` — added `isStaffByAuthorId()` method
+
+---
+
 ## v1.2.1
 
 **Staff Management System**

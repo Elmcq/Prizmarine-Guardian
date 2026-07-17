@@ -3,9 +3,15 @@ import { errorText, successText } from './messages.js';
 export default {
  name: 'close',
  description: 'Close a support ticket. Staff only.',
- adminOnly: true,
+ adminOnly: false,
  usage: '<ticketId>',
  async run(ctx) {
+  const isOwner = ctx.services.permission.isOwner(ctx.authorId);
+  const isStaff = ctx.services.staff.repo.isStaffByAuthorId(ctx.authorId);
+  if (!isOwner && !isStaff) {
+   return ctx.message.reply(errorText('Staff access required.', 'Only registered staff or the owner can close tickets.'));
+  }
+
   const ticketId = (ctx.args[0] || '').toUpperCase();
   if (!ticketId) {
    return ctx.message.reply(errorText('Missing ticket ID.', `Use: ${ctx.config.prefix}close <ticketId>`));
@@ -18,12 +24,6 @@ export default {
 
   if (ticket.status === 'Closed') {
    return ctx.message.reply(errorText('Ticket already closed.', `Ticket ${ticketId} was closed at ${new Date(ticket.closedAt).toLocaleString()}.`));
-  }
-
-  const isOwner = ctx.services.permission.isOwner(ctx.authorId);
-  const isStaff = ctx.services.staff.isStaff(ctx.authorId.replace(/@c\.us$/, ''));
-  if (!isOwner && !isStaff) {
-   return ctx.message.reply(errorText('Staff access required.', 'Only registered staff or the owner can close tickets.'));
   }
 
   const closed = await ctx.services.ticket.close(ticketId, ctx.authorId);

@@ -81,7 +81,7 @@ async function bootstrap() {
  const ruleService = new RuleService({ repo: repos.rules, logger, eventBus });
  const permissionService = new PermissionService({ config });
  const audit = new AuditService({ repo: repos.audit, eventBus, logger }).start();
- const ticketService = new TicketService({ repo: repos.tickets, logger });
+ const ticketService = new TicketService({ repo: repos.tickets, logger, staffRepo: repos.staff });
  const staffService = new StaffService({ repo: repos.staff, logger });
  const backup = new BackupService(db, { keep: 14 });
 
@@ -91,6 +91,7 @@ async function bootstrap() {
  });
  moderation.setClient(client);
  permissionService.setClient(client);
+ ticketService.setClient(client);
  const contactResolver = new ContactResolver(client, logger, repos.settings);
 
  const services = { toxicity, nsfw: nsfwService, advertisement: advertisementService, raid: raidService, sticker: stickerService, spam, moderation, health, backup, rule: ruleService, permission: permissionService, audit, ticket: ticketService, staff: staffService };

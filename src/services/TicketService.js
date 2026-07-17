@@ -1,6 +1,7 @@
 /**
  * @file TicketService — business logic for WhatsApp support tickets.
  * Handles ticket creation, closing, listing, and formatted output.
+ * Supports automatic WhatsApp group creation for ticket management.
  */
 
 const CATEGORY_LABELS = {
@@ -14,9 +15,15 @@ const CATEGORY_LABELS = {
 const DIVIDER = '━━━━━━━━━━━━━━';
 
 export class TicketService {
- constructor({ repo, logger }) {
+ constructor({ repo, logger, client = null, staffRepo = null }) {
   this.repo = repo;
   this.logger = logger;
+  this.client = client;
+  this.staffRepo = staffRepo;
+ }
+
+ setClient(client) {
+  this.client = client;
  }
 
  /**
@@ -43,6 +50,78 @@ export class TicketService {
   });
   this.logger.info('Ticket created', { ticketId: id, userId, category });
   return ticket;
+ }
+
+ /**
+  * Create a WhatsApp group for the ticket.
+  * @param {object} ticket - The ticket record.
+  * @returns {Promise<{chatId: string|null, error: string|null}>}
+  */
+ async createTicketGroup(ticket) {
+  if (!this.client) {
+   return { chatId: null, error: 'WhatsApp client not available' };
+  }
+
+  try {
+   const groupName = `PRIZMARINE TICKET ${ticket.id}`;
+
+   const participants = [];
+   const creatorPhone = ticket.userId.replace(/@(c\.us|lid)$/i, '').replace(/[^0-9]/g, '');
+   if (creatorPhone) participants.push(creatorPhone);
+   if (this.staffRepo) {
+    const staffList = this.staffRepo.findAll();
+    for (const s of staffList) {
+     const staffPhone = s.phone.replace(/[^0-9]/g, '');
+     if (staffPhone && !participants.includes(staffPhone)) {
+      participants.push(staffPhone);
+     }
+    }
+   }
+
+   const chat = await this.client.createGroup(groupName, participants);
+   const chatId = chat.gid?._serialized || chat.gid || null;
+
+   if (!chatId) {
+    return { chatId: null, error: 'Failed to get group ID from response' };
+   }
+
+   await this.repo.setChatId(ticket.id, chatId);
+
+   await this.sendWelcomeMessage(chatId, ticket);
+
+   this.logger.info('Ticket group created', { ticketId: ticket.id, chatId, participants: participants.length });
+   return { chatId, error: null };
+  } catch (err) {
+   this.logger.error('Failed to create ticket group', { ticketId: ticket.id, error: err.message });
+   return { chatId: null, error: err.message };
+  }
+ }
+
+ /**
+  * Send a welcome message to the ticket group.
+  */
+ async sendWelcomeMessage(chatId, ticket) {
+  if (!this.client) return;
+
+  try {
+   const chat = await this.client.getChatById(chatId);
+   const cat = CATEGORY_LABELS[ticket.category] || ticket.category;
+   const lines = [
+    `🎫 *Welcome to Ticket ${ticket.id}*`,
+    '',
+    DIVIDER,
+    `Category: ${cat}`,
+    `Created by: @${ticket.userId.replace(/@c\.us$/, '')}`,
+    ticket.description ? `Description: ${ticket.description}` : null,
+    '',
+    `Use *!close ${ticket.id}* to close this ticket.`,
+    DIVIDER,
+   ].filter(Boolean);
+
+   await chat.sendMessage(lines.join('\n'));
+  } catch (err) {
+   this.logger.error('Failed to send ticket welcome message', { ticketId: ticket.id, error: err.message });
+  }
  }
 
  /**
