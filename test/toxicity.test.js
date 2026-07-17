@@ -18,19 +18,20 @@ const repository = {
   severity: { anjing: 7, goblok: 4, bangsat: 8, fuck: 8, dick: 6 },
   config: { toxicThreshold: 3, cooldownDurationMs: 15000, negationWindow: 3, targetRequired: false },
   negations: ['bukan', 'tidak', 'tak', 'jangan', 'ndak'],
-  contextPatterns: {
-   quoting: ['kata', 'bilang', 'dia bilang'],
-   quotation: ['".*"', "'.*'"],
-   explaining: ['adalah', 'termasuk', 'contoh'],
-   discussion: ['kata .* termasuk', 'contoh kata', 'arti kata', 'jangan gunakan kata', 'kata kasar'],
-   criticism: ['kritik'],
-   entityProtection: ['presiden', 'pejabat', 'tokoh'],
-   asking: ['kenapa', 'apa'],
-   discussing: [],
-   warning: ['jangan'],
-   educational: ['belajar'],
-  },
-  targetPronouns: ['kamu', 'lu', 'dia'],
+   contextPatterns: {
+    quoting: ['kata', 'bilang', 'dia bilang'],
+    quotation: ['".*"', "'.*'"],
+    explaining: ['adalah', 'termasuk', 'contoh'],
+    discussion: ['kata .* termasuk', 'contoh kata', 'arti kata', 'jangan gunakan kata', 'kata kasar'],
+    criticism: ['kritik'],
+    entityProtection: ['presiden', 'pejabat', 'tokoh'],
+    asking: ['kenapa', 'apa'],
+    discussing: [],
+    warning: ['jangan'],
+    educational: ['belajar'],
+    literal: ['hewan', 'binatang', 'peliharaan', 'lucu', 'foto', 'jenis', 'ras', 'mamalia', 'suka'],
+   },
+   targetPronouns: ['kamu', 'lu', 'dia', 'kau'],
  }),
 };
 const service = new ToxicityService(repository);
@@ -168,4 +169,43 @@ test('WARNING: direct insult with target', () => {
 test('WARNING: severe insult', () => {
  const result = service.detect('bangsat');
  assert.equal(result.isToxic, true);
+});
+
+// === v1.1.2 Regression Tests: Literal Context ===
+
+test('IGNORE: literal context — animal discussion', () => {
+ const result = service.detect('Anjing hewan lucu');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.context.includes('literal'), true);
+});
+
+test('IGNORE: literal context — pet discussion', () => {
+ const result = service.detect('Saya suka anjing peliharaan');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.context.includes('literal'), true);
+});
+
+test('IGNORE: literal context — educational', () => {
+ const result = service.detect('Anjing adalah hewan mamalia');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.context.includes('literal'), true);
+});
+
+test('WARNING: direct insult — no literal context', () => {
+ const result = service.detect('dasar anjing');
+ assert.equal(result.isToxic, true);
+ assert.equal(result.context.includes('literal'), false);
+});
+
+test('WARNING: insult with target — no literal context', () => {
+ const result = service.detect('Anjing kamu');
+ assert.equal(result.isToxic, true);
+ assert.equal(result.target, true);
+ assert.equal(result.context.includes('literal'), false);
+});
+
+test('WARNING: insult with target — no literal context (variant)', () => {
+ const result = service.detect('Dasar kau anjing');
+ assert.equal(result.isToxic, true);
+ assert.equal(result.target, true);
 });

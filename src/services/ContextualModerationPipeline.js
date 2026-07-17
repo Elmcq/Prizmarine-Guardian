@@ -230,6 +230,16 @@ export class ContextualModerationPipeline {
       }
     }
     
+    // Check for literal context (animal/object discussion, educational, non-insulting)
+    let hasLiteralContext = false;
+    for (const pattern of this.contextPatterns.literal || []) {
+      if (new RegExp(`\\b${escapeRegex(pattern)}\\b`, 'i').test(text)) {
+        hasLiteralContext = true;
+        contexts.push('literal');
+        break;
+      }
+    }
+    
     // Check for discussing patterns
     for (const pattern of this.contextPatterns.discussing || []) {
       if (new RegExp(pattern, 'i').test(text)) {
@@ -255,7 +265,7 @@ export class ContextualModerationPipeline {
     }
     
     // Determine if context is safe (non-insulting)
-    const safeContexts = ['quotation', 'quoting', 'explaining', 'asking', 'discussion', 'criticism', 'discussing', 'warning', 'educational'];
+    const safeContexts = ['quotation', 'quoting', 'explaining', 'asking', 'discussion', 'criticism', 'discussing', 'warning', 'educational', 'literal'];
     const isSafe = contexts.some(c => safeContexts.includes(c));
     
     return {
@@ -263,6 +273,7 @@ export class ContextualModerationPipeline {
       isSafe,
       isInsulting: !isSafe,
       hasEntityProtection,
+      hasLiteralContext,
     };
   }
 
@@ -379,6 +390,11 @@ export class ContextualModerationPipeline {
       // Reduce score for entity protection (public figures, not personal attack)
       if (context.hasEntityProtection && !target.hasTarget) {
         keywordScore = Math.max(0, keywordScore - 3);
+      }
+      
+      // Reduce score for literal context (animal/object discussion, multi-meaning words)
+      if (context.hasLiteralContext) {
+        keywordScore = Math.max(0, keywordScore - 5);
       }
       
       // Increase score if target exists

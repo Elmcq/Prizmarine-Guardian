@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.1.2
+
+**Literal Context Improvement — multi-meaning word detection**
+
+Status: Stable Patch Release
+
+### Added
+- Literal context detection: recognizes when toxic words are used in non-insulting contexts (animal discussion, educational, object/literal meaning)
+- New context pattern: `literal` with safe keywords (`hewan`, `binatang`, `peliharaan`, `lucu`, `foto`, `jenis`, `ras`, `mamalia`, `suka`, etc.)
+- Score adjustment: literal context reduces score by -5
+- 6 regression tests for multi-meaning word scenarios
+
+### Fixed
+- False positive: `"Anjing hewan lucu"` no longer triggers warning (literal context detected)
+- False positive: `"Saya suka anjing peliharaan"` no longer triggers warning
+- False positive: `"Anjing adalah hewan mamalia"` no longer triggers warning
+- Improved context detection for words with multiple meanings (e.g., `anjing` = dog vs insult)
+
+### Changed
+- `data/badwords.json` — added `contextPatterns.literal` array with safe literal keywords
+- `src/services/ContextualModerationPipeline.js` — Stage 3: literal context detection with word boundaries; Stage 6: literal context -5 scoring adjustment
+- `test/toxicity.test.js` — expanded from 30 to 36 tests
+
+### Contributors
+- **@Altan** — QA testing and discovered literal context false positive issue
+
+---
+
 ## v1.1.1
 
 **Contextual Moderation Pipeline — QA improvements**
