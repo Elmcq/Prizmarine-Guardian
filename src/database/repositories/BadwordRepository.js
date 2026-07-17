@@ -20,51 +20,79 @@ export class BadwordRepository {
   await this.dbService.persist(this.db);
  }
 
- getSettings() {
-  const d = this.db.data || {};
-  const categories = this.getAll();
-  const categoryCounts = Object.fromEntries(
-   Object.entries(categories)
-    .filter(([name]) => name !== 'patterns')
-    .map(([name, entries]) => [name, entries.length]),
-  );
-  return {
-   enabled: this.isEnabled(),
-   warnLimit: d.warnLimit ?? 3,
-   highSeverityBan: Boolean(d.highSeverityBan),
-   categories: categoryCounts,
-   keywords: Object.values(categoryCounts).reduce((total, count) => total + count, 0),
-   patterns: categories.patterns?.length || 0,
-  };
- }
+getSettings() {
+ const d = this.db.data || {};
+ const categories = this.getAll();
+ const categoryCounts = Object.fromEntries(
+  Object.entries(categories)
+   .filter(([name]) => !['patterns', 'severity', 'config', 'negations', 'contextPatterns', 'targetPronouns'].includes(name))
+   .map(([name, entries]) => [name, entries.length]),
+ );
+ return {
+  enabled: this.isEnabled(),
+  warnLimit: d.warnLimit ?? 3,
+  highSeverityBan: Boolean(d.highSeverityBan),
+  categories: categoryCounts,
+  keywords: Object.values(categoryCounts).reduce((total, count) => total + count, 0),
+  patterns: categories.patterns?.length || 0,
+  contextualConfig: categories.config,
+ };
+}
 
- async updateSettings(partial = {}) {
-  const d = this.db.data;
-  if (partial.warnLimit !== undefined) {
-   const n = Number(partial.warnLimit);
-   if (Number.isFinite(n) && n >= 1) d.warnLimit = Math.floor(n);
-  }
-  if (partial.highSeverityBan !== undefined) {
-   d.highSeverityBan = Boolean(partial.highSeverityBan);
-  }
-  await this.dbService.persist(this.db);
-  return this.getSettings();
+async updateSettings(partial = {}) {
+ const d = this.db.data;
+ if (partial.warnLimit !== undefined) {
+  const n = Number(partial.warnLimit);
+  if (Number.isFinite(n) && n >= 1) d.warnLimit = Math.floor(n);
  }
+ if (partial.highSeverityBan !== undefined) {
+  d.highSeverityBan = Boolean(partial.highSeverityBan);
+ }
+ 
+ // Handle contextual moderation configuration
+ if (!d.config) d.config = {};
+ if (partial.toxicThreshold !== undefined) {
+  const n = Number(partial.toxicThreshold);
+  if (Number.isFinite(n) && n >= 1) d.config.toxicThreshold = Math.floor(n);
+ }
+ if (partial.cooldownDurationMs !== undefined) {
+  const n = Number(partial.cooldownDurationMs);
+  if (Number.isFinite(n) && n >= 1000) d.config.cooldownDurationMs = Math.floor(n);
+ }
+ if (partial.negationWindow !== undefined) {
+  const n = Number(partial.negationWindow);
+  if (Number.isFinite(n) && n >= 1) d.config.negationWindow = Math.floor(n);
+ }
+ if (partial.targetRequired !== undefined) {
+  d.config.targetRequired = Boolean(partial.targetRequired);
+ }
+ 
+ await this.dbService.persist(this.db);
+ return this.getSettings();
+}
 
  async reload() {
   await this.dbService.badwords.read();
   return this.getSettings();
  }
 
- getAll() {
-  const d = this.db.data || {};
-  const categories = {};
-  for (const key of CATEGORY_KEYS) {
-   categories[key] = Array.isArray(d[key]) ? d[key].filter((w) => typeof w === 'string') : [];
-  }
-  categories.patterns = Array.isArray(d.patterns) ? d.patterns : [];
-  return categories;
+getAll() {
+ const d = this.db.data || {};
+ const categories = {};
+ for (const key of CATEGORY_KEYS) {
+  categories[key] = Array.isArray(d[key]) ? d[key].filter((w) => typeof w === 'string') : [];
  }
+ categories.patterns = Array.isArray(d.patterns) ? d.patterns : [];
+ 
+ // Include contextual moderation configuration
+ categories.severity = d.severity || {};
+ categories.config = d.config || {};
+ categories.negations = d.negations || [];
+ categories.contextPatterns = d.contextPatterns || {};
+ categories.targetPronouns = d.targetPronouns || [];
+ 
+ return categories;
+}
 
  async addIncident(incident) {
   if (!Array.isArray(this.db.data.incidents)) this.db.data.incidents = [];

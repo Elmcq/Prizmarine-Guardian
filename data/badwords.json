@@ -1,5 +1,95 @@
 {
-  "_comment": "Starter word lists for the ToxicityService. Edit freely and add your own. Matching is case-insensitive and diacritic/leetspeak-tolerant (see utils/sanitize.js). Words are matched on word boundaries. Add regex patterns under 'patterns' (matched case-insensitively against the sanitized text). This is a MODERATE starter set — expand it for production use.",
+  "_comment": "Starter word lists for the ToxicityService. Edit freely and add your own. Matching is case-insensitive and diacritic/leetspeak-tolerant (see utils/sanitize.js). Words are matched on word boundaries. Add regex patterns under 'patterns' (matched case-insensitively against the sanitized text).",
+
+  "severity": {
+    "kontol": 10,
+    "memek": 10,
+    "bangsat": 8,
+    "anjing": 7,
+    "goblok": 4,
+    "tolol": 4,
+    "bodoh": 2,
+    "sesat": 1,
+    "aneh": 0
+  },
+
+  "config": {
+    "toxicThreshold": 3,
+    "cooldownDurationMs": 15000,
+    "negationWindow": 3,
+    "targetRequired": false
+  },
+
+  "negations": [
+    "bukan",
+    "tidak",
+    "tak",
+    "jangan",
+    "ga",
+    "gak",
+    "nggak",
+    "enggak",
+    "ndak",
+    "don't",
+    "never",
+    "no",
+    "not"
+  ],
+
+  "contextPatterns": {
+    "quoting": [
+      "kata",
+      "bilang",
+      "sebut",
+      "kalau.*kata",
+      "katanya"
+    ],
+    "explaining": [
+      "adalah",
+      "artinya",
+      "maksudnya",
+      "contoh",
+      "termasuk"
+    ],
+    "asking": [
+      "kenapa",
+      "mengapa",
+      "apa",
+      "gimana",
+      "bagaimana"
+    ],
+    "discussing": [
+      "itu",
+      "ini",
+      "yang",
+      "sama"
+    ],
+    "warning": [
+      "jangan",
+      "stop",
+      "hentikan"
+    ],
+    "educational": [
+      "belajar",
+      "kuliah",
+      "sekolah",
+      "dosen",
+      "guru",
+      "ilmu",
+      "materi"
+    ]
+  },
+
+  "targetPronouns": [
+    "kamu",
+    "lu",
+    "loe",
+    "lo",
+    "dia",
+    "kau",
+    "kalian",
+    "ente"
+  ],
 
   "indonesian": [
     "anjing",
@@ -68,7 +158,8 @@
     "ocim",
     "bejir",
     "bejat",
-    "keparat"
+    "keparat",
+    "sesat"
   ],
 
   "english": [
@@ -155,5 +246,7 @@
   "patterns": [
     "\\b(kont|mem|tit)(o|i|e|ol|ek){1,3}\\b",
     "\\b(g|b|m|p)(u|c|o|i)(k|t|m|n|l)(i|e|a)(l|k|m|r)?\\b"
-  ]
+  ],
+
+  "incidents": []
 }

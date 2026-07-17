@@ -10,17 +10,22 @@ export default {
  if (!['status', 'on', 'off'].includes(action)) {
  return ctx.message.reply(usageText(ctx.config.prefix, 'antitoxic', 'status|on|off'));
  }
- if (action === 'status') {
+if (action === 'status') {
  const settings = ctx.repos.badwords.getSettings();
  const stats = ctx.repos.badwords.getStats();
+ const contextualConfig = settings.contextualConfig || {};
  return ctx.message.reply(statusText('AntiToxic', settings.enabled, [
  `Detections: ${stats.detections}`,
  `Keywords: ${settings.keywords}`,
  `Patterns: ${settings.patterns}`,
  `Warn limit: ${settings.warnLimit}`,
+ `Toxic threshold: ${contextualConfig.toxicThreshold || 3}`,
+ `Cooldown: ${(contextualConfig.cooldownDurationMs || 15000) / 1000}s`,
+ `Negation window: ${contextualConfig.negationWindow || 3} words`,
+ `Target required: ${contextualConfig.targetRequired ? 'Yes' : 'No'}`,
  `Top category: ${stats.mostTriggeredCategory || 'None'}`,
  ]));
- }
+}
  const enabled = action === 'on';
  await ctx.repos.badwords.setEnabled(enabled);
  if (enabled) {

@@ -62,8 +62,18 @@ export const DEFAULTS = Object.freeze({
  bans: { records: [] },
  settings: { groupInviteLinks: {}, contactProfiles: {}, messagesSeen: 0, blockedMessages: 0 },
  audit: { records: [] },
- badwords: {
+badwords: {
  enabled: true,
+ severity: {},
+ config: {
+  toxicThreshold: 3,
+  cooldownDurationMs: 15000,
+  negationWindow: 3,
+  targetRequired: false,
+ },
+ negations: [],
+ contextPatterns: {},
+ targetPronouns: [],
  indonesian: [],
  english: [],
  slurs: [],
@@ -72,7 +82,7 @@ export const DEFAULTS = Object.freeze({
  spamInsults: [],
  patterns: [],
  incidents: [],
- },
+},
  nsfw: {
  enabled: true,
  warnLimit: 3,

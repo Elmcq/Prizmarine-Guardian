@@ -1,13 +1,17 @@
 export const MODULE_KEYS = ['toxicity', 'nsfw', 'advertisement', 'raid', 'sticker'];
 
 export const MODULE_SCHEMAS = {
- toxicity: {
+toxicity: {
  label: 'Anti Toxic',
  fields: [
   { key: 'warnLimit', type: 'int', min: 1, label: 'Warn limit' },
   { key: 'highSeverityBan', type: 'bool', label: 'Ban on high severity' },
+  { key: 'toxicThreshold', type: 'int', min: 1, label: 'Toxic score threshold' },
+  { key: 'cooldownDurationMs', type: 'int', min: 1000, label: 'Warning cooldown (ms)' },
+  { key: 'negationWindow', type: 'int', min: 1, label: 'Negation window (words)' },
+  { key: 'targetRequired', type: 'bool', label: 'Require target for warning' },
  ],
- },
+},
  nsfw: {
  label: 'Anti NSFW',
  fields: [

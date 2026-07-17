@@ -63,7 +63,7 @@ async function bootstrap() {
  audit: new AuditRepository(db),
  };
 
- const toxicity = new ToxicityService(badwords);
+ const toxicity = new ToxicityService(badwords, logger);
  const nsfwService = new NSFWService(repos.nsfw);
  const advertisementService = new AdvertisementService(repos.advertisement);
  const raidService = new RaidService(repos.raid);

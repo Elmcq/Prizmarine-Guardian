@@ -60,17 +60,19 @@ export function registerMessageHandler({ client, repos, services, config, logger
  }
  }
 
- if (isGroup && !message.fromMe && services.toxicity.isEnabled()) {
- const detection = services.toxicity.detect(body);
+if (isGroup && !message.fromMe && services.toxicity.isEnabled()) {
+ const detection = services.toxicity.detect(body, message, authorId);
  if (detection.isToxic) {
- logger.info('AntiToxic match', { enabled: true, sanitized: detection.sanitized, category: detection.category, keyword: detection.keyword, groupId, authorId });
- const incident = await repos.badwords.addIncident({ group: groupId, user: authorId, category: detection.category, matched: detection.matched, keyword: detection.keyword, action: 'warn' });
- eventBus.emit(EVENTS.TOXICITY_DETECTED, { groupId, targetId: authorId, category: detection.category, keyword: detection.keyword, matched: detection.matched, incidentId: incident.id });
- const badwordsSettings = repos.badwords.getSettings();
- await services.moderation.moderate(message, detection, groupId, authorId, badwordsSettings.warnLimit);
+ logger.info('AntiToxic match', { enabled: true, sanitized: detection.sanitized, category: detection.category, keyword: detection.keyword, score: detection.score, decision: detection.decision, context: detection.context, target: detection.target, negation: detection.negation, groupId, authorId });
+ const incident = await repos.badwords.addIncident({ group: groupId, user: authorId, category: detection.category, matched: detection.matched, keyword: detection.keyword, action: detection.decision.toLowerCase(), score: detection.score, context: detection.context, target: detection.target, negation: detection.negation });
+ eventBus.emit(EVENTS.TOXICITY_DETECTED, { groupId, targetId: authorId, category: detection.category, keyword: detection.keyword, matched: detection.matched, incidentId: incident.id, score: detection.score, decision: detection.decision });
+ if (detection.decision === 'WARNING' || detection.decision === 'MUTE' || detection.decision === 'BAN') {
+  const badwordsSettings = repos.badwords.getSettings();
+  await services.moderation.moderate(message, detection, groupId, authorId, badwordsSettings.warnLimit);
+ }
  return;
  }
- }
+}
 
  if (isGroup) {
  const moderate = await shouldModerate({ message, client, chat, authorId, config });
