@@ -1,12 +1,20 @@
 /**
- * Safely get chat from a message, using cache to avoid Puppeteer race conditions.
- * Multiple handlers (message, nsfw, ad, raid, sticker) all call getChat()
- * concurrently on the same message, causing Puppeteer execution context errors.
- * This helper caches the result on the message object so only one call is made.
+ * Safely get chat from a message, using a promise cache to prevent
+ * Puppeteer race conditions. Multiple handlers (message, nsfw, ad, raid, sticker)
+ * all fire concurrently on the same message event. Without a shared promise,
+ * they all call getChat() simultaneously, crashing Puppeteer's execution context.
  */
+const chatCache = new WeakMap();
+
 export async function getCachedChat(message) {
-  if (message._cachedChat) return message._cachedChat;
-  const chat = await message.getChat();
-  message._cachedChat = chat;
-  return chat;
+  if (chatCache.has(message)) {
+    return chatCache.get(message);
+  }
+  const promise = message.getChat();
+  chatCache.set(message, promise);
+  try {
+    return await promise;
+  } finally {
+    chatCache.delete(message);
+  }
 }
