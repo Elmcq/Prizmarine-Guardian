@@ -8,17 +8,28 @@ const repository = {
  isEnabled: () => true,
  getStats: () => ({ detections: 0, warnings: 0, mostTriggeredCategory: null, keywords: 3 }),
  getAll: () => ({
-  indonesian: ['anjing'],
+  indonesian: ['anjing', 'goblok', 'bangsat'],
   english: ['fuck', 'dick'],
   slurs: [],
   hateSpeech: [],
   harassment: [],
   spamInsults: [],
   patterns: [],
-  severity: { anjing: 7, fuck: 8, dick: 6 },
+  severity: { anjing: 7, goblok: 4, bangsat: 8, fuck: 8, dick: 6 },
   config: { toxicThreshold: 3, cooldownDurationMs: 15000, negationWindow: 3, targetRequired: false },
-  negations: ['bukan', 'tidak', 'tak', 'jangan'],
-  contextPatterns: { quoting: ['kata'], explaining: ['adalah'] },
+  negations: ['bukan', 'tidak', 'tak', 'jangan', 'ndak'],
+  contextPatterns: {
+   quoting: ['kata', 'bilang', 'dia bilang'],
+   quotation: ['".*"', "'.*'"],
+   explaining: ['adalah', 'termasuk', 'contoh'],
+   discussion: ['kata .* termasuk', 'contoh kata', 'arti kata', 'jangan gunakan kata', 'kata kasar'],
+   criticism: ['kritik'],
+   entityProtection: ['presiden', 'pejabat', 'tokoh'],
+   asking: ['kenapa', 'apa'],
+   discussing: [],
+   warning: ['jangan'],
+   educational: ['belajar'],
+  },
   targetPronouns: ['kamu', 'lu', 'dia'],
  }),
 };
@@ -109,4 +120,52 @@ test('contextual pipeline returns score and decision', () => {
  const result = service.detect('anjing');
  assert.equal(typeof result.score, 'number');
  assert.equal(typeof result.decision, 'string');
+});
+
+// === v1.1.1 Regression Tests ===
+
+test('IGNORE: discussion context — discussing the word itself', () => {
+ const result = service.detect('kata goblok termasuk kata kasar');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.context.includes('discussion'), true);
+});
+
+test('IGNORE: negated insult', () => {
+ const result = service.detect('tidak goblok');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.negation, true);
+});
+
+test('IGNORE: quotation context', () => {
+ const result = service.detect('dia bilang "goblok" tadi');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.context.includes('quoting'), true);
+});
+
+test('IGNORE: entity protection with criticism', () => {
+ const result = service.detect('kritik pejabat soal goblok');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.context.includes('criticism') || result.context.includes('entityProtection'), true);
+});
+
+test('IGNORE: educational context', () => {
+ const result = service.detect('jangan gunakan kata goblok');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.context.includes('discussion') || result.context.includes('warning'), true);
+});
+
+test('WARNING: direct personal attack', () => {
+ const result = service.detect('dasar goblok');
+ assert.equal(result.isToxic, true);
+});
+
+test('WARNING: direct insult with target', () => {
+ const result = service.detect('lu goblok');
+ assert.equal(result.isToxic, true);
+ assert.equal(result.target, true);
+});
+
+test('WARNING: severe insult', () => {
+ const result = service.detect('bangsat');
+ assert.equal(result.isToxic, true);
 });

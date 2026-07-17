@@ -42,7 +42,16 @@
       "bilang",
       "sebut",
       "kalau.*kata",
-      "katanya"
+      "katanya",
+      "dia bilang",
+      "kata orang",
+      "menurut.*kata"
+    ],
+    "quotation": [
+      "\".*\"",
+      "'.*'",
+      "\"[^\"]*\"",
+      "'[^']*'"
     ],
     "explaining": [
       "adalah",
@@ -57,6 +66,17 @@
       "apa",
       "gimana",
       "bagaimana"
+    ],
+    "discussion": [
+      "kata .* termasuk",
+      "contoh kata",
+      "arti kata",
+      "maksud kata",
+      "kata tersebut",
+      "jangan gunakan kata",
+      "kata kasar",
+      "kata vulgar",
+      "penggunaan kata"
     ],
     "discussing": [
       "itu",
@@ -77,6 +97,25 @@
       "guru",
       "ilmu",
       "materi"
+    ],
+    "criticism": [
+      "kritik",
+      "evaluasi",
+      "penilaian",
+      "ulasan",
+      "tanggapan"
+    ],
+    "entityProtection": [
+      "presiden",
+      "pejabat",
+      "tokoh",
+      "pemimpin",
+      "menteri",
+      "gubernur",
+      "bupati",
+      "walikota",
+      "anggota dewan",
+      "politisi"
     ]
   },
 

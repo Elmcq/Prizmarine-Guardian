@@ -173,6 +173,14 @@ export class ContextualModerationPipeline {
     const text = originalText.toLowerCase();
     const contexts = [];
     
+    // Check for quotation patterns (quoted text is always safe)
+    for (const pattern of this.contextPatterns.quotation || []) {
+      if (new RegExp(pattern, 'i').test(text)) {
+        contexts.push('quotation');
+        break;
+      }
+    }
+    
     // Check for quoting patterns
     for (const pattern of this.contextPatterns.quoting || []) {
       if (new RegExp(pattern, 'i').test(text)) {
@@ -193,6 +201,31 @@ export class ContextualModerationPipeline {
     for (const pattern of this.contextPatterns.asking || []) {
       if (new RegExp(pattern, 'i').test(text)) {
         contexts.push('asking');
+        break;
+      }
+    }
+    
+    // Check for discussion patterns (safe context — discussing the word itself)
+    for (const pattern of this.contextPatterns.discussion || []) {
+      if (new RegExp(pattern, 'i').test(text)) {
+        contexts.push('discussion');
+        break;
+      }
+    }
+    
+    // Check for criticizing patterns (criticism of entities, not personal attack)
+    for (const pattern of this.contextPatterns.criticism || []) {
+      if (new RegExp(pattern, 'i').test(text)) {
+        contexts.push('criticism');
+        break;
+      }
+    }
+    
+    // Check for entity protection (mentions of public figures in non-personal context)
+    let hasEntityProtection = false;
+    for (const pattern of this.contextPatterns.entityProtection || []) {
+      if (new RegExp(pattern, 'i').test(text)) {
+        hasEntityProtection = true;
         break;
       }
     }
@@ -222,13 +255,14 @@ export class ContextualModerationPipeline {
     }
     
     // Determine if context is safe (non-insulting)
-    const safeContexts = ['quoting', 'explaining', 'asking', 'discussing', 'warning', 'educational'];
+    const safeContexts = ['quotation', 'quoting', 'explaining', 'asking', 'discussion', 'criticism', 'discussing', 'warning', 'educational'];
     const isSafe = contexts.some(c => safeContexts.includes(c));
     
     return {
       contexts,
       isSafe,
       isInsulting: !isSafe,
+      hasEntityProtection,
     };
   }
 
@@ -279,16 +313,18 @@ export class ContextualModerationPipeline {
     // Check for @mentions
     const hasMention = text.includes('@');
     
-    // Check for target pronouns
-    const hasPronoun = this.targetPronouns.some(p => 
-      lowerText.includes(p)
-    );
+    // Check for target pronouns (with word boundaries to avoid matching "lo" inside "goblok")
+    const hasPronoun = this.targetPronouns.some(p => {
+      const regex = new RegExp(`\\b${escapeRegex(p)}\\b`, 'i');
+      return regex.test(text);
+    });
     
     // Check for reply (message has quotedMessage)
     const hasReply = Boolean(message.quotedMessage);
     
-    // Check for direct address patterns
-    const hasDirectAddress = /(?:kamu|lu|loe|lo|dia|kau|kalian|ente)\s*(ini|itu)?/i.test(text);
+    // Check for direct address patterns (with word boundaries)
+    const directPronouns = this.targetPronouns.join('|');
+    const hasDirectAddress = new RegExp(`(?:${directPronouns})\\s*(?:ini|itu)?\\b`, 'i').test(text);
     
     const hasTarget = hasMention || hasPronoun || hasReply || hasDirectAddress;
     
@@ -316,9 +352,33 @@ export class ContextualModerationPipeline {
         keywordScore = Math.max(0, keywordScore - 5);
       }
       
-      // Reduce score if safe context
+      // Reduce score for safe contexts
       if (context.isSafe) {
-        keywordScore = Math.max(0, keywordScore - 2);
+        // Quotation = almost completely safe
+        if (context.contexts.includes('quotation')) {
+          keywordScore = Math.max(0, keywordScore - 6);
+        }
+        // Discussion about the word itself = very safe
+        else if (context.contexts.includes('discussion')) {
+          keywordScore = Math.max(0, keywordScore - 5);
+        }
+        // Explaining / educational = safe
+        else if (context.contexts.includes('explaining') || context.contexts.includes('educational')) {
+          keywordScore = Math.max(0, keywordScore - 4);
+        }
+        // Criticism (non-personal) = somewhat safe
+        else if (context.contexts.includes('criticism')) {
+          keywordScore = Math.max(0, keywordScore - 3);
+        }
+        // Other safe contexts
+        else {
+          keywordScore = Math.max(0, keywordScore - 2);
+        }
+      }
+      
+      // Reduce score for entity protection (public figures, not personal attack)
+      if (context.hasEntityProtection && !target.hasTarget) {
+        keywordScore = Math.max(0, keywordScore - 3);
       }
       
       // Increase score if target exists
@@ -330,6 +390,11 @@ export class ContextualModerationPipeline {
       const sameWordCount = candidates.filter(c => c.normalized === candidate.normalized).length;
       if (sameWordCount > 1) {
         keywordScore = Math.min(10, keywordScore + sameWordCount);
+      }
+      
+      // Direct personal attack bonus (target + no safe context)
+      if (target.hasTarget && !context.isSafe) {
+        keywordScore = Math.min(10, keywordScore + 1);
       }
       
       score += keywordScore;

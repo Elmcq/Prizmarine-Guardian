@@ -30,5 +30,27 @@ Initial release — Prizmarine Guardian
 
 ---
 
+## v1.1.1
+
+**Contextual Moderation Pipeline — QA improvements**
+
+### Fixed
+- False positive: `"tidak goblok"` triggering warning (negation detection missed due to word-boundary issue)
+- False positive: `"dasar goblok"` incorrectly classified as MUTE (severity 4 + no target context)
+- Target detection: `"lo"` pronoun matching inside `"goblok"` substring — now uses word boundaries
+
+### Added
+- Context patterns: `quotation` (quoted text detection), `discussion` (word-discussion patterns), `entityProtection` (presiden/pejabat/tokoh)
+- Scoring adjustments: quotation (-6), discussion (-5), explaining (-4), criticism (-3)
+- 8 regression tests for context/negation/education scenarios
+
+### Changed
+- `data/badwords.json` — expanded contextPatterns: `quotation`, `discussion`, `criticism`, `entityProtection`
+- `ContextualModerationPipeline.js` — Stage 3: quotation/discussion/criticism/entityProtection detection; Stage 6: adjusted scoring weights; target detection uses word boundaries
+- `test/toxicity.test.js` — expanded from 23 to 31 tests
+
+---
+
 Special thanks:
 **@Yoga** — reported false positive detection issue
+**@Altan** — QA testing for v1.1.1
