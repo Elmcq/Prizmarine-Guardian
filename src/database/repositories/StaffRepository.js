@@ -1,0 +1,60 @@
+/**
+ * @file StaffRepository — CRUD for staff records (data/staff.json).
+ * Tracks registered support staff who can manage tickets.
+ */
+
+export class StaffRepository {
+ constructor(dbService) {
+  this.dbService = dbService;
+  this.db = dbService.staff;
+ }
+
+ findByPhone(phone) {
+  const normalized = this.normalize(phone);
+  return this.db.data.records.find((r) => this.normalize(r.phone) === normalized) || null;
+ }
+
+ findAll() {
+  return this.db.data.records;
+ }
+
+ isStaff(phone) {
+  return this.findByPhone(phone) !== null;
+ }
+
+ async add(phone, name, role = 'support') {
+  if (this.findByPhone(phone)) return null;
+  const record = {
+   id: this.dbService.uuid(),
+   phone: this.normalize(phone),
+   name: name || 'Staff',
+   role,
+   addedAt: Date.now(),
+   addedBy: null,
+  };
+  this.db.data.records.push(record);
+  await this.dbService.persist(this.db);
+  return record;
+ }
+
+ async remove(phone) {
+  const normalized = this.normalize(phone);
+  const before = this.db.data.records.length;
+  this.db.data.records = this.db.data.records.filter(
+   (r) => this.normalize(r.phone) !== normalized,
+  );
+  const changed = before !== this.db.data.records.length;
+  if (changed) await this.dbService.persist(this.db);
+  return changed;
+ }
+
+ count() {
+  return this.db.data.records.length;
+ }
+
+ normalize(phone) {
+  return String(phone).replace(/[^0-9]/g, '');
+ }
+}
+
+export default StaffRepository;

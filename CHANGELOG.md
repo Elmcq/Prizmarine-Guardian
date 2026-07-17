@@ -1,5 +1,28 @@
 # Changelog
 
+## v1.2.1
+
+**Staff Management System**
+
+Status: Feature Release
+
+### Added
+- `!addstaff <phone> <name>` — register support staff (owner only)
+- `!removestaff <phone>` — remove support staff (owner only)
+- `StaffRepository` — persistence layer for staff (data/staff.json)
+- `StaffService` — business logic with formatted output
+- 19 tests for repository and service (76/76 total passing)
+- `!close` command now checks staff registration in addition to admin status
+
+### Changed
+- `src/config/constants.js` — added `staff` to DB_FILES and DEFAULTS
+- `src/database/DatabaseService.js` — added staff getter and initialization
+- `src/index.js` — wired StaffRepository and StaffService
+- `src/commands/index.js` — registered addstaff, removestaff commands
+- `src/commands/close.js` — added staff permission check
+
+---
+
 ## v1.2.0
 
 **WhatsApp Ticket Support System**

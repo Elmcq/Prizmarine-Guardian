@@ -18,6 +18,7 @@ import { StickerRepository } from './database/repositories/StickerRepository.js'
 import { RuleRepository } from './database/repositories/RuleRepository.js';
 import { AuditRepository } from './database/repositories/AuditRepository.js';
 import { TicketRepository } from './database/repositories/TicketRepository.js';
+import { StaffRepository } from './database/repositories/StaffRepository.js';
 import { ToxicityService } from './services/ToxicityService.js';
 import { ModerationService } from './services/ModerationService.js';
 import { SpamService } from './services/SpamService.js';
@@ -33,6 +34,7 @@ import { RuleService } from './services/RuleService.js';
 import { PermissionService } from './services/PermissionService.js';
 import { AuditService } from './services/AuditService.js';
 import { TicketService } from './services/TicketService.js';
+import { StaffService } from './services/StaffService.js';
 import { ContactResolver } from './services/ContactResolver.js';
 import { registerMessageHandler } from './handlers/messageHandler.js';
 import { registerReadyHandler } from './handlers/readyHandler.js';
@@ -64,6 +66,7 @@ async function bootstrap() {
   rules: new RuleRepository(db),
    audit: new AuditRepository(db),
    tickets: new TicketRepository(db),
+   staff: new StaffRepository(db),
   };
 
  const toxicity = new ToxicityService(badwords, logger);
@@ -79,6 +82,7 @@ async function bootstrap() {
  const permissionService = new PermissionService({ config });
  const audit = new AuditService({ repo: repos.audit, eventBus, logger }).start();
  const ticketService = new TicketService({ repo: repos.tickets, logger });
+ const staffService = new StaffService({ repo: repos.staff, logger });
  const backup = new BackupService(db, { keep: 14 });
 
  const client = new Client({
@@ -89,7 +93,7 @@ async function bootstrap() {
  permissionService.setClient(client);
  const contactResolver = new ContactResolver(client, logger, repos.settings);
 
- const services = { toxicity, nsfw: nsfwService, advertisement: advertisementService, raid: raidService, sticker: stickerService, spam, moderation, health, backup, rule: ruleService, permission: permissionService, audit, ticket: ticketService };
+ const services = { toxicity, nsfw: nsfwService, advertisement: advertisementService, raid: raidService, sticker: stickerService, spam, moderation, health, backup, rule: ruleService, permission: permissionService, audit, ticket: ticketService, staff: staffService };
 
  registerMessageHandler({ client, repos, services, config, logger, eventBus, rateLimiter, commandRegistry, contactResolver });
  registerNSFWHandler({ client, repos, services, config, logger, eventBus, nsfwService });

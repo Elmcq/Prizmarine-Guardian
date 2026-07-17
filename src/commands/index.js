@@ -33,6 +33,8 @@ import ticket from './ticket.js';
 import myticket from './myticket.js';
 import tickets from './tickets.js';
 import close from './close.js';
+import addstaff from './addstaff.js';
+import removestaff from './removestaff.js';
 
 const modules = [
  warn,
@@ -70,6 +72,8 @@ const modules = [
  myticket,
  tickets,
  close,
+ addstaff,
+ removestaff,
 ];
 
 export const commandRegistry = new Map();

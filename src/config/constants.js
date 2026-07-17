@@ -19,6 +19,7 @@ export const DB_FILES = Object.freeze({
   rules: path.join(DATA_DIR, 'rules.json'),
    audit: path.join(DATA_DIR, 'audit.json'),
    tickets: path.join(DATA_DIR, 'tickets.json'),
+   staff: path.join(DATA_DIR, 'staff.json'),
 });
 
 export const BACKUP_DIR = path.join(DATA_DIR, 'backups');
@@ -131,6 +132,9 @@ badwords: {
   },
   },
   tickets: {
+  records: [],
+  },
+  staff: {
   records: [],
   },
 });
