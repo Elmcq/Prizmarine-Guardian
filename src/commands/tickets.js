@@ -9,6 +9,7 @@ async function isAuthorizedStaff(ctx) {
  if (ctx.authorName) {
   const nameLower = ctx.authorName.toLowerCase().trim();
   const allStaff = ctx.services.staff.repo.findAll();
+  ctx.logger.info('Staff name check', { authorName: ctx.authorName, nameLower, staffNames: allStaff.map(s => s.name) });
   for (const s of allStaff) {
    if (s.name && nameLower.includes(s.name.toLowerCase().trim())) return true;
   }
