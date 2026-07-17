@@ -104,7 +104,6 @@ export class TicketService {
   if (!this.client) return;
 
   try {
-   const chat = await this.client.getChatById(chatId);
    const cat = CATEGORY_LABELS[ticket.category] || ticket.category;
    const lines = [
     `🎫 *Welcome to Ticket ${ticket.id}*`,
@@ -118,7 +117,7 @@ export class TicketService {
     DIVIDER,
    ].filter(Boolean);
 
-   await chat.sendMessage(lines.join('\n'));
+   await this.client.sendMessage(chatId, lines.join('\n'));
   } catch (err) {
    this.logger.error('Failed to send ticket welcome message', { ticketId: ticket.id, chatId, error: err.message });
   }

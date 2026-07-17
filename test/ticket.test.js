@@ -28,9 +28,7 @@ function mockLogger() {
 function mockClient(createGroupResult = { gid: { _serialized: 'group-123@g.us' } }) {
  return {
   createGroup: async () => createGroupResult,
-  getChatById: async () => ({
-   sendMessage: async () => {},
-  }),
+  sendMessage: async () => {},
  };
 }
 
@@ -236,13 +234,13 @@ describe('TicketService — group creation', () => {
 
  it('createTicketGroup includes staff in participants', async () => {
   let capturedParticipants;
-  const client = {
-   createGroup: async (name, participants) => {
-    capturedParticipants = participants;
-    return { gid: { _serialized: 'group-123@g.us' } };
-   },
-   getChatById: async () => ({ sendMessage: async () => {} }),
-  };
+   const client = {
+    createGroup: async (name, participants) => {
+     capturedParticipants = participants;
+     return { gid: { _serialized: 'group-123@g.us' } };
+    },
+    sendMessage: async () => {},
+   };
   const staffRepo = mockStaffRepo([
    { phone: '6281111111111', name: 'Staff1' },
    { phone: '6282222222222', name: 'Staff2' },
@@ -278,7 +276,7 @@ describe('TicketService — group creation', () => {
 
  it('sendWelcomeMessage does not throw on error', async () => {
   const client = {
-   getChatById: async () => { throw new Error('Chat not found'); },
+   sendMessage: async () => { throw new Error('Chat not found'); },
   };
   service = new TicketService({ repo, logger: mockLogger(), client });
   const ticket = await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
@@ -287,14 +285,14 @@ describe('TicketService — group creation', () => {
 
  it('sendWelcomeMessage sends formatted message', async () => {
   let sentMessage;
+  let sentChatId;
   const client = {
-   getChatById: async () => ({
-    sendMessage: async (msg) => { sentMessage = msg; },
-   }),
+   sendMessage: async (chatId, msg) => { sentChatId = chatId; sentMessage = msg; },
   };
   service = new TicketService({ repo, logger: mockLogger(), client });
   const ticket = await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'technical', description: 'Bug in login' });
   await service.sendWelcomeMessage('group-123@g.us', ticket);
+  assert.equal(sentChatId, 'group-123@g.us');
   assert.ok(sentMessage.includes('TKT-0001'));
   assert.ok(sentMessage.includes('Technical Issue'));
   assert.ok(sentMessage.includes('Bug in login'));
