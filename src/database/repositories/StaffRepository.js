@@ -32,6 +32,15 @@ export class StaffRepository {
   return this.db.data.records.some((r) => this.normalize(r.phone) === cleaned);
  }
 
+ /**
+  * Check if a phone number matches any staff (for LID resolution).
+  */
+ isStaffByPhone(phone) {
+  const normalized = this.normalize(phone);
+  if (!normalized) return false;
+  return this.db.data.records.some((r) => this.normalize(r.phone) === normalized);
+ }
+
  async add(phone, name, role = 'support') {
   if (this.findByPhone(phone)) return null;
   const record = {
