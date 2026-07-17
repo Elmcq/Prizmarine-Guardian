@@ -124,12 +124,23 @@ export class TicketService {
  }
 
  /**
-  * Close a ticket.
+  * Close a ticket and leave its WhatsApp group.
   */
  async close(id, closedBy) {
   const ticket = await this.repo.close(id, closedBy);
   if (ticket) {
    this.logger.info('Ticket closed', { ticketId: id, closedBy });
+   if (ticket.chatId && this.client) {
+    try {
+     const chat = await this.client.getChatById(ticket.chatId);
+     if (chat && typeof chat.leave === 'function') {
+      await chat.leave();
+      this.logger.info('Left ticket group', { ticketId: id, chatId: ticket.chatId });
+     }
+    } catch (err) {
+     this.logger.error('Failed to leave ticket group', { ticketId: id, chatId: ticket.chatId, error: err.message });
+    }
+   }
   }
   return ticket;
  }

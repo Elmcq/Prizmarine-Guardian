@@ -172,6 +172,38 @@ describe('TicketService', () => {
   assert.equal(closed.status, 'Closed');
  });
 
+ it('close leaves WhatsApp group when chatId exists', async () => {
+  let leftChatId = null;
+  const client = {
+   getChatById: async (id) => ({
+    leave: async () => { leftChatId = id; },
+   }),
+  };
+  service = new TicketService({ repo, logger: mockLogger(), client });
+  await service.create({ userId: 'user1@c.us', category: 'general' });
+  await repo.setChatId('TKT-0001', 'group-123@g.us');
+  await service.close('TKT-0001', 'admin@c.us');
+  assert.equal(leftChatId, 'group-123@g.us');
+ });
+
+ it('close handles leave error gracefully', async () => {
+  const client = {
+   getChatById: async () => { throw new Error('Chat not found'); },
+  };
+  service = new TicketService({ repo, logger: mockLogger(), client });
+  await service.create({ userId: 'user1@c.us', category: 'general' });
+  await repo.setChatId('TKT-0001', 'group-123@g.us');
+  const closed = await service.close('TKT-0001', 'admin@c.us');
+  assert.equal(closed.status, 'Closed');
+ });
+
+ it('close skips leave when no chatId', async () => {
+  service = new TicketService({ repo, logger: mockLogger(), client: {} });
+  await service.create({ userId: 'user1@c.us', category: 'general' });
+  const closed = await service.close('TKT-0001', 'admin@c.us');
+  assert.equal(closed.status, 'Closed');
+ });
+
  it('formatTicket produces readable text', async () => {
   const ticket = await service.create({ userId: 'user1@c.us', category: 'abuse', description: 'harassment' });
   const text = service.formatTicket(ticket);
