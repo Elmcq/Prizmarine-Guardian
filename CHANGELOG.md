@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.1.4
+
+**English Profanity Expansion — 2,700+ words from better-profane-words**
+
+Status: Stable Feature Release
+
+### Added
+- `better-profane-words` npm package — 2,725+ English profanity words with categories and intensity ratings
+- Dynamic intensity-to-severity mapping (intensity 1-5 → severity 1-9)
+- Category mapping: slur_racial → slurs, sexual → english, hateful_ideology → slurs, etc.
+- `BadwordRepository.getAll()` now merges package words with JSON file words
+- Words include: racial slurs, sexual terms, violence-related, hate speech, bodily functions
+
+### Changed
+- `src/database/repositories/BadwordRepository.js` — integrated better-profane-words package
+- `test/toxicity.test.js` — updated tests to handle larger word lists (55/55 passing)
+
+---
+
 ## v1.1.3
 
 **Bug Report System — structured QA workflow**
