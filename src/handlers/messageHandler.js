@@ -3,11 +3,12 @@ import { UNAUTHORIZED_TEXT, cooldownText } from '../utils/formatter.js';
 import { guardCommand } from '../middleware/rateLimitMiddleware.js';
 import { shouldModerate, isGroupAdmin, isOwner } from '../middleware/authMiddleware.js';
 import { isOnCooldown, markCooldown } from '../middleware/cooldownMiddleware.js';
+import { getCachedChat } from '../utils/chatCache.js';
 
 export function registerMessageHandler({ client, repos, services, config, logger, eventBus, rateLimiter, commandRegistry, contactResolver }) {
  client.on('message', async (message) => {
  try {
- const chat = await message.getChat();
+ const chat = await getCachedChat(message);
  const isGroup = Boolean(chat.isGroup);
  const authorId = message.author || message.from;
  const groupId = isGroup ? chat.id._serialized : null;

@@ -44,6 +44,8 @@ const adStreaks = new Map();
  * @param {import('../events/EventBus.js').EventBus} deps.eventBus
  * @param {import('../services/AdvertisementService.js').AdvertisementService} deps.advertisementService
  */
+import { getCachedChat } from '../utils/chatCache.js';
+
 export function registerAdvertisementHandler({
   client,
   repos,
@@ -60,7 +62,7 @@ export function registerAdvertisementHandler({
     try {
       if (!adRepo.isEnabled()) return;
 
-      const chat = await message.getChat();
+      const chat = await getCachedChat(message);
       if (!chat.isGroup) return;
 
       const groupId = chat.id._serialized;
