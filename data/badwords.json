@@ -6,9 +6,12 @@
     "memek": 10,
     "bangsat": 8,
     "anjing": 7,
+    "nigger": 10,
+    "nigga": 9,
     "goblok": 4,
     "tolol": 4,
     "bodoh": 2,
+    "payah": 2,
     "sesat": 1,
     "aneh": 0
   },
@@ -170,6 +173,7 @@
     "goblog",
     "tolol",
     "bodoh",
+    "payah",
     "kampret",
     "keparat",
     "setan",
@@ -248,6 +252,8 @@
 
   "slurs": [
     "nword",
+    "nigger",
+    "nigga",
     "faggot",
     "fag",
     "dyke",
