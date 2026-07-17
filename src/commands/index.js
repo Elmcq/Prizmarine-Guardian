@@ -31,6 +31,7 @@ import kick from './kick.js';
 import tempban from './tempban.js';
 import ticket from './ticket.js';
 import myticket from './myticket.js';
+import tickets from './tickets.js';
 import close from './close.js';
 
 const modules = [
@@ -67,6 +68,7 @@ const modules = [
  tempban,
  ticket,
  myticket,
+ tickets,
  close,
 ];
 
