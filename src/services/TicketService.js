@@ -120,7 +120,7 @@ export class TicketService {
 
    await chat.sendMessage(lines.join('\n'));
   } catch (err) {
-   this.logger.error('Failed to send ticket welcome message', { ticketId: ticket.id, error: err.message });
+   this.logger.error('Failed to send ticket welcome message', { ticketId: ticket.id, chatId, error: err.message });
   }
  }
 
