@@ -250,9 +250,9 @@ describe('TicketService — group creation', () => {
   service = new TicketService({ repo, logger: mockLogger(), client, staffRepo });
   const ticket = await repo.create({ id: 'TKT-0001', userId: '6289999999999@c.us', category: 'general' });
   await service.createTicketGroup(ticket);
-  assert.ok(capturedParticipants.includes('6289999999999'));
-  assert.ok(capturedParticipants.includes('6281111111111'));
-  assert.ok(capturedParticipants.includes('6282222222222'));
+   assert.ok(capturedParticipants.includes('6289999999999@c.us'));
+   assert.ok(capturedParticipants.includes('6281111111111@c.us'));
+   assert.ok(capturedParticipants.includes('6282222222222@c.us'));
  });
 
  it('createTicketGroup handles API error gracefully', async () => {
