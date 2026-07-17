@@ -65,18 +65,18 @@ export class TicketService {
   try {
    const groupName = `PRIZMARINE TICKET ${ticket.id}`;
 
-   const participants = [];
-   const creatorPhone = ticket.userId.replace(/@(c\.us|lid)$/i, '').replace(/[^0-9]/g, '');
-   if (creatorPhone) participants.push(creatorPhone);
-   if (this.staffRepo) {
-    const staffList = this.staffRepo.findAll();
-    for (const s of staffList) {
-     const staffPhone = s.phone.replace(/[^0-9]/g, '');
-     if (staffPhone && !participants.includes(staffPhone)) {
-      participants.push(staffPhone);
+    const participants = [];
+    const creatorPhone = ticket.userId.replace(/@(c\.us|lid)$/i, '').replace(/[^0-9]/g, '');
+    if (creatorPhone) participants.push(`${creatorPhone}@c.us`);
+    if (this.staffRepo) {
+     const staffList = this.staffRepo.findAll();
+     for (const s of staffList) {
+      const staffPhone = s.phone.replace(/[^0-9]/g, '');
+      if (staffPhone && !participants.includes(`${staffPhone}@c.us`)) {
+       participants.push(`${staffPhone}@c.us`);
+      }
      }
     }
-   }
 
    const chat = await this.client.createGroup(groupName, participants);
    const chatId = chat.gid?._serialized || chat.gid || null;
