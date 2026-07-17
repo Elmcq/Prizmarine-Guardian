@@ -1,9 +1,28 @@
 /**
  * @file BadwordRepository — reads/writes the AntiToxic module configuration
  * and incident log stored in data/badwords.json (managed by DatabaseService).
+ * English profanity words are loaded from better-profane-words package.
  */
 
+import * as betterProfane from 'better-profane-words';
+
 const CATEGORY_KEYS = ['indonesian', 'english', 'slurs', 'hateSpeech', 'harassment', 'spamInsults'];
+
+// Map better-profane-words intensity (1-5) to our severity (0-10)
+const INTENSITY_TO_SEVERITY = { 1: 1, 2: 3, 3: 5, 4: 7, 5: 9 };
+
+// Map better-profane-words categories to our categories
+const CATEGORY_MAP = {
+  bodily: 'english',
+  drug: 'english',
+  hateful_ideology: 'slurs',
+  insult: 'english',
+  religious: 'hateSpeech',
+  sexual: 'english',
+  slur_gender: 'slurs',
+  slur_racial: 'slurs',
+  violence: 'hateSpeech',
+};
 
 export class BadwordRepository {
  constructor(dbService) {
@@ -82,21 +101,49 @@ async updateSettings(partial = {}) {
  }
 
 getAll() {
- const d = this.db.data || {};
- const categories = {};
- for (const key of CATEGORY_KEYS) {
-  categories[key] = Array.isArray(d[key]) ? d[key].filter((w) => typeof w === 'string') : [];
- }
- categories.patterns = Array.isArray(d.patterns) ? d.patterns : [];
- 
- // Include contextual moderation configuration
- categories.severity = d.severity || {};
- categories.config = d.config || {};
- categories.negations = d.negations || [];
- categories.contextPatterns = d.contextPatterns || {};
- categories.targetPronouns = d.targetPronouns || [];
- 
- return categories;
+  const d = this.db.data || {};
+  const categories = {};
+  for (const key of CATEGORY_KEYS) {
+    categories[key] = Array.isArray(d[key]) ? d[key].filter((w) => typeof w === 'string') : [];
+  }
+  categories.patterns = Array.isArray(d.patterns) ? d.patterns : [];
+  
+  // Include contextual moderation configuration
+  categories.severity = d.severity || {};
+  categories.config = d.config || {};
+  categories.negations = d.negations || [];
+  categories.contextPatterns = d.contextPatterns || {};
+  categories.targetPronouns = d.targetPronouns || [];
+  
+  // Merge better-profane-words into english/slurs/hateSpeech
+  const profaneWords = betterProfane.getAll();
+  const existingEnglish = new Set(categories.english.map(w => w.toLowerCase()));
+  const existingSlurs = new Set(categories.slurs.map(w => w.toLowerCase()));
+  const existingHate = new Set(categories.hateSpeech.map(w => w.toLowerCase()));
+  
+  for (const entry of profaneWords) {
+    const word = entry.word.toLowerCase().trim();
+    if (!word || word.length < 2) continue;
+    
+    const severity = INTENSITY_TO_SEVERITY[entry.intensity] ?? 3;
+    const targetCategory = CATEGORY_MAP[entry.categories[0]] || 'english';
+    
+    if (targetCategory === 'english' && !existingEnglish.has(word)) {
+      categories.english.push(word);
+      categories.severity[word] = severity;
+      existingEnglish.add(word);
+    } else if (targetCategory === 'slurs' && !existingSlurs.has(word)) {
+      categories.slurs.push(word);
+      categories.severity[word] = severity;
+      existingSlurs.add(word);
+    } else if (targetCategory === 'hateSpeech' && !existingHate.has(word)) {
+      categories.hateSpeech.push(word);
+      categories.severity[word] = severity;
+      existingHate.add(word);
+    }
+  }
+  
+  return categories;
 }
 
  async addIncident(incident) {
