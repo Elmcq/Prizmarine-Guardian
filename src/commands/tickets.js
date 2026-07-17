@@ -6,12 +6,15 @@ async function isAuthorizedStaff(ctx) {
 
  if (ctx.services.staff.repo.isStaffByAuthorId(ctx.authorId)) return true;
 
- if (ctx.client && String(ctx.authorId).includes('@lid')) {
+ if (String(ctx.authorId).includes('@lid')) {
   try {
    const contact = await ctx.client.getContactById(ctx.authorId);
    const phone = contact?.number?.replace(/[^0-9]/g, '');
+   ctx.logger.info('LID resolution attempt', { authorId: ctx.authorId, phone, hasContact: !!contact });
    if (phone && ctx.services.staff.repo.isStaffByPhone(phone)) return true;
-  } catch {}
+  } catch (err) {
+   ctx.logger.info('LID resolution failed', { authorId: ctx.authorId, error: err.message });
+  }
  }
 
  return false;
