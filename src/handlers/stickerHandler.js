@@ -18,7 +18,7 @@
 import { EVENTS } from '../config/constants.js';
 import { isOnCooldown, markCooldown } from '../middleware/cooldownMiddleware.js';
 import { stickerWarningText, stickerBanText } from '../utils/formatter.js';
-import { getCachedChat } from '../utils/chatCache.js';
+import { getChatFromMessage } from '../utils/chatCache.js';
 
 /** Whether a whatsapp-web.js message is a sticker. */
 function isStickerMessage(message) {
@@ -49,7 +49,7 @@ export function registerStickerHandler({ client, repos, services, config, logger
       if (message.fromMe) return;
       if (!isStickerMessage(message)) return;
 
-      const chat = await getCachedChat(message);
+      const chat = getChatFromMessage(message);
       if (!chat.isGroup) return;
 
       const groupId = chat.id._serialized;

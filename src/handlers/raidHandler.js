@@ -21,7 +21,7 @@
 import { EVENTS } from '../config/constants.js';
 import { isOnCooldown, markCooldown } from '../middleware/cooldownMiddleware.js';
 import { raidBanText, raidAlertText } from '../utils/formatter.js';
-import { getCachedChat } from '../utils/chatCache.js';
+import { getChatFromMessage } from '../utils/chatCache.js';
 
 /** Classify which moderation detector produced a warning (from its reason). */
 function classifySource(reason) {
@@ -175,7 +175,7 @@ export function registerRaidHandler({ client, repos, services, config, logger, e
   client.on('message', async (message) => {
     try {
       if (message.fromMe) return;
-      const chat = await getCachedChat(message);
+      const chat = getChatFromMessage(message);
       if (!chat.isGroup) return;
       const groupId = chat.id._serialized;
       const authorId = message.author || message.from;

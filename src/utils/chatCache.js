@@ -1,20 +1,29 @@
 /**
- * Safely get chat from a message, using a promise cache to prevent
- * Puppeteer race conditions. Multiple handlers (message, nsfw, ad, raid, sticker)
- * all fire concurrently on the same message event. Without a shared promise,
- * they all call getChat() simultaneously, crashing Puppeteer's execution context.
+ * Safely get chat info from a message WITHOUT calling message.getChat().
+ *
+ * message.getChat() internally calls Client.getChatById() → page.evaluate(),
+ * which crashes with "r: r" when WhatsApp's internal Store.Chat is broken.
+ * Instead, we construct a minimal chat-like object from message metadata.
  */
-const chatCache = new WeakMap();
+export function getChatFromMessage(message) {
+  const from = message?.from || '';
+  const isGroup = from.endsWith('@g.us') || from.endsWith('@lid');
+  return {
+    id: { _serialized: from },
+    isGroup,
+    name: null,
+    participants: [],
+  };
+}
 
-export async function getCachedChat(message) {
-  if (chatCache.has(message)) {
-    return chatCache.get(message);
-  }
-  const promise = message.getChat();
-  chatCache.set(message, promise);
+/**
+ * Safely try to get the real chat object for admin checks.
+ * If getChatById fails (Puppeteer execution context broken), returns null.
+ */
+export async function getRealChatSafe(client, chatId) {
   try {
-    return await promise;
-  } finally {
-    chatCache.delete(message);
+    return await client.getChatById(chatId);
+  } catch {
+    return null;
   }
 }

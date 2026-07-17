@@ -30,7 +30,7 @@ import { nsfwWarningText, nsfwBanText } from '../utils/formatter.js';
  * @param {import('../events/EventBus.js').EventBus} deps.eventBus
  * @param {import('../services/NSFWService.js').NSFWService} deps.nsfwService
  */
-import { getCachedChat } from '../utils/chatCache.js';
+import { getChatFromMessage } from '../utils/chatCache.js';
 
 export function registerNSFWHandler({ client, repos, services, config, logger, eventBus, nsfwService }) {
   const nsfwRepo = repos.nsfw;
@@ -40,7 +40,7 @@ export function registerNSFWHandler({ client, repos, services, config, logger, e
     try {
       if (!nsfwRepo.isEnabled()) return;
 
-      const chat = await getCachedChat(message);
+      const chat = getChatFromMessage(message);
       if (!chat.isGroup) return;
 
       const groupId = chat.id._serialized;
