@@ -3,7 +3,7 @@ import { successText, usageText, GROUP_ONLY } from './messages.js';
 
 export default {
  name: 'clearwarn',
- description: 'Reset warnings. Self-clear or clear another user (admin).',
+ description: 'Reset warnings. Self-clear or clear another user (admin/owner).',
  adminOnly: false,
  usage: '[@user]',
  async run(ctx) {
