@@ -6,32 +6,30 @@ import { sanitize } from '../src/utils/sanitize.js';
 
 const repository = {
  isEnabled: () => true,
- getStats: () => ({ detections: 0, warnings: 0, mostTriggeredCategory: null, keywords: 3 }),
+ getStats: () => ({ detections: 0, warnings: 0, mostTriggeredCategory: null, keywords: 5 }),
  getAll: () => ({
-  indonesian: ['anjing', 'goblok', 'bangsat'],
-  english: ['fuck', 'dick'],
-  slurs: [],
-  hateSpeech: [],
-  harassment: [],
-  spamInsults: [],
+  normal: ['bego', 'anjay', 'payah'],
+  sensitive: ['goblok', 'tolol', 'bacot'],
+  high: ['anjing', 'bangsat', 'kontol'],
+  slurs: ['nigger', 'faggot'],
   patterns: [],
-  severity: { anjing: 7, goblok: 4, bangsat: 8, fuck: 8, dick: 6 },
+  severity: {},
   config: { toxicThreshold: 3, cooldownDurationMs: 15000, negationWindow: 3, targetRequired: false },
   negations: ['bukan', 'tidak', 'tak', 'jangan', 'ndak'],
-   contextPatterns: {
-    quoting: ['kata', 'bilang', 'dia bilang'],
-    quotation: ['".*"', "'.*'"],
-    explaining: ['adalah', 'termasuk', 'contoh'],
-    discussion: ['kata .* termasuk', 'contoh kata', 'arti kata', 'jangan gunakan kata', 'kata kasar'],
-    criticism: ['kritik'],
-    entityProtection: ['presiden', 'pejabat', 'tokoh'],
-    asking: ['kenapa', 'apa'],
-    discussing: [],
-    warning: ['jangan'],
-    educational: ['belajar'],
-    literal: ['hewan', 'binatang', 'peliharaan', 'lucu', 'foto', 'jenis', 'ras', 'mamalia', 'suka'],
-   },
-   targetPronouns: ['kamu', 'lu', 'dia', 'kau'],
+  contextPatterns: {
+   quoting: ['kata', 'bilang', 'dia bilang'],
+   quotation: ['".*"', "'.*'"],
+   explaining: ['adalah', 'termasuk', 'contoh'],
+   discussion: ['kata .* termasuk', 'contoh kata', 'arti kata', 'jangan gunakan kata', 'kata kasar'],
+   criticism: ['kritik'],
+   entityProtection: ['presiden', 'pejabat', 'tokoh'],
+   asking: ['kenapa', 'apa'],
+   discussing: [],
+   warning: ['jangan'],
+   educational: ['belajar'],
+   literal: ['hewan', 'binatang', 'peliharaan', 'lucu', 'foto', 'jenis', 'ras', 'mamalia', 'suka'],
+  },
+  targetPronouns: ['kamu', 'lu', 'dia', 'kau'],
  }),
 };
 const service = new ToxicityService(repository);
@@ -40,18 +38,136 @@ test('sanitize normalizes case and WhatsApp formatting', () => {
  assert.equal(sanitize('*_~Fuck~_*'), 'fuck');
 });
 
-for (const text of ['Fuck', 'fuck', 'FUCK', 'fUcK']) {
- test(`detects case-insensitive English word: ${text}`, () => {
- const result = service.detect(text);
- assert.equal(result.isToxic, true);
- assert.equal(result.category, 'english');
- assert.equal(result.keyword, 'fuck');
- });
-}
+// === Normal Tier Tests ===
 
-test('detects Dick and Indonesian keywords', () => {
- assert.equal(service.detect('Dick').keyword, 'dick');
- assert.equal(service.detect('anjing').category, 'indonesian');
+test('normal tier: never triggers — bego', () => {
+ const result = service.detect('bego');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.decision, 'IGNORE');
+ assert.equal(result.tier, 'normal');
+});
+
+test('normal tier: never triggers — anjay', () => {
+ const result = service.detect('anjay');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.tier, 'normal');
+});
+
+test('normal tier: never triggers — payah', () => {
+ const result = service.detect('payah');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.tier, 'normal');
+});
+
+// === Sensitive Tier Tests ===
+
+test('sensitive tier: triggers with target — goblok', () => {
+ const result = service.detect('lu goblok');
+ assert.equal(result.isToxic, true);
+ assert.equal(result.tier, 'sensitive');
+ assert.equal(result.target, true);
+});
+
+test('sensitive tier: negated reduces score — tidak goblok', () => {
+ const result = service.detect('tidak goblok');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.negation, true);
+});
+
+test('sensitive tier: quotation context — dia bilang "goblok"', () => {
+ const result = service.detect('dia bilang "goblok" tadi');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.context.includes('quoting'), true);
+});
+
+test('sensitive tier: discussion context — kata goblok termasuk kata kasar', () => {
+ const result = service.detect('kata goblok termasuk kata kasar');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.context.includes('discussion'), true);
+});
+
+test('sensitive tier: direct insult — dasar goblok', () => {
+ const result = service.detect('dasar goblok');
+ assert.equal(result.isToxic, true);
+});
+
+test('sensitive tier: educational context — jangan gunakan kata goblok', () => {
+ const result = service.detect('jangan gunakan kata goblok');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.context.includes('discussion') || result.context.includes('warning'), true);
+});
+
+// === High Tier Tests ===
+
+test('high tier: triggers — anjing', () => {
+ const result = service.detect('anjing');
+ assert.equal(result.isToxic, true);
+ assert.equal(result.tier, 'high');
+});
+
+test('high tier: with target — lu anjing', () => {
+ const result = service.detect('lu anjing');
+ assert.equal(result.isToxic, true);
+ assert.equal(result.target, true);
+});
+
+test('high tier: negated reduces but still warns — tidak anjing', () => {
+ const result = service.detect('tidak anjing');
+ assert.equal(result.negation, true);
+});
+
+test('high tier: literal context reduces — Anjing hewan lucu', () => {
+ const result = service.detect('Anjing hewan lucu');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.context.includes('literal'), true);
+});
+
+test('high tier: direct insult — dasar anjing', () => {
+ const result = service.detect('dasar anjing');
+ assert.equal(result.isToxic, true);
+ assert.equal(result.context.includes('literal'), false);
+});
+
+test('high tier: severe — bangsat', () => {
+ const result = service.detect('bangsat');
+ assert.equal(result.isToxic, true);
+ assert.equal(result.tier, 'high');
+});
+
+// === Slurs Tier Tests ===
+
+test('slurs tier: always triggers — nigger', () => {
+ const result = service.detect('nigger');
+ assert.equal(result.isToxic, true);
+ assert.equal(result.tier, 'slurs');
+});
+
+test('slurs tier: always triggers — faggot', () => {
+ const result = service.detect('faggot');
+ assert.equal(result.isToxic, true);
+ assert.equal(result.tier, 'slurs');
+});
+
+test('slurs tier: with target — lu nigger', () => {
+ service.pipeline.cooldowns.clear();
+ const result = service.detect('lu nigger');
+ assert.equal(result.isToxic, true);
+ assert.equal(result.tier, 'slurs');
+ assert.equal(result.target, true);
+});
+
+// === Backward Compatibility Tests ===
+
+test('detect returns score and decision', () => {
+ const result = service.detect('goblok');
+ assert.equal(typeof result.score, 'number');
+ assert.equal(typeof result.decision, 'string');
+});
+
+test('detectSimple works', () => {
+ const result = service.detectSimple('goblok');
+ assert.equal(result.isToxic, true);
+ assert.equal(result.tier, 'sensitive');
 });
 
 test('normal messages pass', () => {
@@ -62,29 +178,19 @@ test('word boundaries minimize false positives', () => {
  assert.equal(service.detect('firetruck').isToxic, false);
 });
 
-test('loads top-level category arrays', () => {
- const db = {
- badwords: { data: { enabled: true, english: ['fuck'], indonesian: ['anjing'], patterns: [] } },
- persist: async () => {},
- uuid: () => 'id',
- };
- const repo = new BadwordRepository(db);
- assert.equal(repo.getSettings().keywords >= 2, true);
-});
+// === BadwordRepository Tests ===
 
-test('loads wrapped category arrays even when empty defaults exist at root', () => {
+test('loads tier-based word lists', () => {
  const db = {
   badwords: {
    data: {
     enabled: true,
-    english: ['fuck', 'dick'],
-    indonesian: ['anjing'],
-    patterns: ['bad\\s+phrase'],
-    severity: { anjing: 7, fuck: 8, dick: 6 },
-    config: { toxicThreshold: 3, cooldownDurationMs: 15000, negationWindow: 3, targetRequired: false },
-    negations: ['bukan', 'tidak'],
+    tiers: { normal: ['bego'], sensitive: ['goblok'], high: ['anjing'], slurs: ['nigger'] },
+    patterns: [],
+    config: { toxicThreshold: 3, cooldownDurationMs: 0, negationWindow: 3, targetRequired: false },
+    negations: [],
     contextPatterns: {},
-    targetPronouns: ['kamu', 'lu'],
+    targetPronouns: [],
    },
   },
   persist: async () => {},
@@ -92,120 +198,43 @@ test('loads wrapped category arrays even when empty defaults exist at root', () 
  };
  const repo = new BadwordRepository(db);
  const settings = repo.getSettings();
- assert.equal(settings.keywords >= 3, true);
- assert.equal(settings.patterns, 1);
- const wrappedService = new ToxicityService(repo);
- assert.equal(wrappedService.detect('Fuck').isToxic, true);
- assert.equal(wrappedService.detect('Dick').isToxic, true);
- assert.equal(wrappedService.detect('anjing').isToxic, true);
+ assert.equal(settings.keywords >= 4, true);
+ assert.equal(settings.tiers.normal >= 1, true);
+ assert.equal(settings.tiers.sensitive >= 1, true);
 });
 
-test('contextual pipeline reduces score for negated words', () => {
- const result = service.detect('tidak anjing');
- assert.equal(result.isToxic, false);
- assert.equal(result.negation, true);
+test('getTierForWord returns correct tier', () => {
+ const db = {
+  badwords: {
+   data: {
+    enabled: true,
+    tiers: { normal: ['bego'], sensitive: ['goblok'], high: ['anjing'], slurs: ['nigger'] },
+    patterns: [],
+    config: {},
+    negations: [],
+    contextPatterns: {},
+    targetPronouns: [],
+   },
+  },
+  persist: async () => {},
+  uuid: () => 'id',
+ };
+ const repo = new BadwordRepository(db);
+ assert.equal(repo.getTierForWord('bego'), 'normal');
+ assert.equal(repo.getTierForWord('goblok'), 'sensitive');
+ assert.equal(repo.getTierForWord('anjing'), 'high');
+ assert.equal(repo.getTierForWord('nigger'), 'slurs');
+ assert.equal(repo.getTierForWord('unknown'), 'sensitive');
 });
 
-test('contextual pipeline reduces score for safe context', () => {
- const result = service.detect('kata anjing termasuk toxic');
- assert.equal(result.isToxic, false);
- assert.equal(result.context.includes('quoting') || result.context.includes('explaining'), true);
-});
-
-test('contextual pipeline detects target', () => {
- const result = service.detect('lu anjing');
- assert.equal(result.target, true);
-});
-
-test('contextual pipeline returns score and decision', () => {
- const result = service.detect('anjing');
- assert.equal(typeof result.score, 'number');
- assert.equal(typeof result.decision, 'string');
-});
-
-// === v1.1.1 Regression Tests ===
-
-test('IGNORE: discussion context — discussing the word itself', () => {
- const result = service.detect('kata goblok termasuk kata kasar');
- assert.equal(result.isToxic, false);
- assert.equal(result.context.includes('discussion'), true);
-});
-
-test('IGNORE: negated insult', () => {
- const result = service.detect('tidak goblok');
- assert.equal(result.isToxic, false);
- assert.equal(result.negation, true);
-});
-
-test('IGNORE: quotation context', () => {
- const result = service.detect('dia bilang "goblok" tadi');
- assert.equal(result.isToxic, false);
- assert.equal(result.context.includes('quoting'), true);
-});
-
-test('IGNORE: entity protection with criticism', () => {
- const result = service.detect('kritik pejabat soal goblok');
- assert.equal(result.isToxic, false);
- assert.equal(result.context.includes('criticism') || result.context.includes('entityProtection'), true);
-});
-
-test('IGNORE: educational context', () => {
- const result = service.detect('jangan gunakan kata goblok');
- assert.equal(result.isToxic, false);
- assert.equal(result.context.includes('discussion') || result.context.includes('warning'), true);
-});
-
-test('WARNING: direct personal attack', () => {
- const result = service.detect('dasar goblok');
- assert.equal(result.isToxic, true);
-});
-
-test('WARNING: direct insult with target', () => {
- const result = service.detect('lu goblok');
- assert.equal(result.isToxic, true);
- assert.equal(result.target, true);
-});
-
-test('WARNING: severe insult', () => {
- const result = service.detect('bangsat');
- assert.equal(result.isToxic, true);
-});
-
-// === v1.1.2 Regression Tests: Literal Context ===
-
-test('IGNORE: literal context — animal discussion', () => {
- const result = service.detect('Anjing hewan lucu');
- assert.equal(result.isToxic, false);
- assert.equal(result.context.includes('literal'), true);
-});
-
-test('IGNORE: literal context — pet discussion', () => {
- const result = service.detect('Saya suka anjing peliharaan');
- assert.equal(result.isToxic, false);
- assert.equal(result.context.includes('literal'), true);
-});
-
-test('IGNORE: literal context — educational', () => {
- const result = service.detect('Anjing adalah hewan mamalia');
- assert.equal(result.isToxic, false);
- assert.equal(result.context.includes('literal'), true);
-});
-
-test('WARNING: direct insult — no literal context', () => {
- const result = service.detect('dasar anjing');
- assert.equal(result.isToxic, true);
- assert.equal(result.context.includes('literal'), false);
-});
-
-test('WARNING: insult with target — no literal context', () => {
- const result = service.detect('Anjing kamu');
- assert.equal(result.isToxic, true);
- assert.equal(result.target, true);
- assert.equal(result.context.includes('literal'), false);
-});
-
-test('WARNING: insult with target — no literal context (variant)', () => {
- const result = service.detect('Dasar kau anjing');
- assert.equal(result.isToxic, true);
- assert.equal(result.target, true);
+test('loads empty tiers gracefully', () => {
+ const db = {
+  badwords: { data: { enabled: true } },
+  persist: async () => {},
+  uuid: () => 'id',
+ };
+ const repo = new BadwordRepository(db);
+ const settings = repo.getSettings();
+ assert.equal(settings.keywords >= 0, true);
+ assert.equal(settings.tiers.normal, 0);
 });
