@@ -1,6 +1,6 @@
-![Prizmarine Guardian Banner](https://i.ibb.co.com/zyFpPYf/New-Project.png)
-
 # 🛡️ Prizmarine Guardian
+
+![Prizmarine Guardian Banner](https://i.ibb.co.com/zyFpPYf/New-Project.png)
 
 **Author: [El McQQ](https://github.com/Elmcq)**
 
@@ -15,6 +15,7 @@ repeat offenders — while also defending groups against spam and message floodi
 ## ✨ Features
 
 ### Moderation
+
 - **Anti-Toxic detection** — Indonesian / English profanity, slurs, hate speech, harassment.
   **8-stage Contextual Moderation Pipeline** (v1.2.0) with **4-tier word classification**
   (normal / sensitive / high / slurs) and **5-intent classification** (GENERAL_EXPRESSION,
@@ -37,6 +38,7 @@ repeat offenders — while also defending groups against spam and message floodi
 - **💠 Anti-Sticker Spam module** — detects sticker floods and duplicate sticker spam, per-user.
 
 ### Group Management
+
 - **`!lock` / `!unlock`** — toggle admin-only messaging in groups.
 - **`!kick` / `!ban` / `!tempban`** — remove or ban users (with optional rule citation).
 - **📜 Rule Management** — dynamic, file-backed rulebook. `!rules` / `!rule` to read,
@@ -44,19 +46,23 @@ repeat offenders — while also defending groups against spam and message floodi
   descriptions.
 
 ### Ticket Support System
+
 - **WhatsApp-native tickets** — `!ticket` creates a ticket + a dedicated WhatsApp group.
 - **Full lifecycle** — `!ticket` (create) → `!claim` (staff takes ownership) → `!resolve` (staff closes) → `!close` (admin force-close + kick all + bot leaves).
 - **`!myticket`** — members see their own tickets.
 - **`!tickets`** — staff lists all tickets.
 
 ### Staff Management
+
 - **`!addstaff` / `!removestaff`** — owner manages staff roster (persisted in `data/staff.json`).
 - Staff can use `!claim`, `!resolve`, `!tickets`.
 
 ### Web Dashboard
+
 - **Owner-authenticated Express dashboard** — live stats, module toggle, rule CRUD, incident logs.
 
 ### Observability
+
 - Winston logging, per-command rate limiting & cooldown, health heartbeat, runtime statistics.
 - Automatic backup every 12h, graceful shutdown, QR authentication, automatic reconnect.
 
@@ -170,7 +176,7 @@ in `.wwebjs_auth/`.
 
 ## 💬 Commands
 
-### Moderation
+### Moderation Commands
 
 | Command | Description |
 | ------- | ----------- |
@@ -184,7 +190,7 @@ in `.wwebjs_auth/`.
 | `!lock` | Lock group — only admins can send messages |
 | `!unlock` | Unlock group — all members can send |
 
-### Anti-Toxic / NSFW / Ads / Raid / Sticker
+### Module Commands
 
 | Command | Description |
 | ------- | ----------- |
@@ -224,14 +230,14 @@ in `.wwebjs_auth/`.
 | `!resolve` | Staff: resolve a claimed ticket |
 | `!close` | Admin: close ticket + kick members + bot leaves |
 
-### Staff Management
+### Staff Commands
 
 | Command | Description |
 | ------- | ----------- |
 | `!addstaff @user Name` | Add a staff member (owner) |
 | `!removestaff @user` | Remove a staff member (owner) |
 
-### Info
+### Info Commands
 
 | Command | Description |
 | ------- | ----------- |
@@ -341,7 +347,7 @@ Owner-authenticated Express dashboard. Enable by setting `DASHBOARD_TOKEN` in `.
 
 ## 📁 Folder structure
 
-```
+```text
 prizmarine-anti-toxic/
 ├── src/
 │   ├── index.js            # Bootstrap, client, QR, reconnect
@@ -384,5 +390,5 @@ WhatsApp's Terms of Service; use it responsibly and at your own risk.
 
 Special thanks:
 
-* **@Yoga** — Reported initial false positive detection issue in v1.1.0
-* **@Altan** — QA testing and discovered additional context detection issues for v1.1.1
+- **@Yoga** — Reported initial false positive detection issue in v1.1.0
+- **@Altan** — QA testing and discovered additional context detection issues for v1.1.1
