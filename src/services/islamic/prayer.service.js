@@ -1,5 +1,5 @@
-import myquran from '../../integrations/islamic/myquran.client.js';
-import aladhan from '../../integrations/islamic/aladhan.client.js';
+import { calculatePrayerTimes } from '../../utils/prayerCalculator.js';
+import { findCity, INDONESIAN_CITIES } from '../../utils/cities.js';
 import { ISLAMIC_CONFIG } from '../../config/islamic.config.js';
 
 export class PrayerService {
@@ -8,42 +8,33 @@ export class PrayerService {
     this.logger = logger;
   }
 
-  async searchCity(query) {
-    try {
-      return await myquran.getLocations(query);
-    } catch {
-      return [];
-    }
+  searchCity(query) {
+    const city = findCity(query);
+    if (!city) return null;
+    return [city];
   }
 
-  async getPrayerTimes(groupId) {
+  getPrayerTimes(groupId) {
     const group = this.repo.getGroup(groupId);
-    if (!group?.cityId) return null;
+    if (!group) return null;
 
-    const cached = this.repo.getCachedPrayerTimes(group.cityId);
-    if (cached) return cached;
-
-    try {
-      const data = await myquran.getPrayerTimes(group.cityId);
-      const times = data.jadwal?.[0];
-      if (times) {
-        await this.repo.cachePrayerTimes(group.cityId, times);
-      }
-      return times || null;
-    } catch (err) {
-      this.logger.warn('Failed to fetch prayer times', { groupId, error: err.message });
-      return null;
+    if (group.lat && group.lng) {
+      const tz = group.timezone ? parseInt(group.timezone) : 7;
+      return calculatePrayerTimes(group.lat, group.lng, new Date(), 'KEMENAG', tz);
     }
+
+    if (group.cityId) {
+      const city = this._findCityById(group.cityId);
+      if (city) {
+        return calculatePrayerTimes(city.lat, city.lng, new Date(), 'KEMENAG', city.tz);
+      }
+    }
+
+    return null;
   }
 
-  async getPrayerTimesByCoords(lat, lng) {
-    try {
-      const data = await aladhan.getPrayerTimes(lat, lng);
-      return data.timings || null;
-    } catch (err) {
-      this.logger.warn('Failed to fetch prayer times by coords', { error: err.message });
-      return null;
-    }
+  getPrayerTimesByCoords(lat, lng, tz = 7) {
+    return calculatePrayerTimes(lat, lng, new Date(), 'KEMENAG', tz);
   }
 
   getNextPrayer(times) {
@@ -76,14 +67,20 @@ export class PrayerService {
     if (!times) return null;
     const names = ISLAMIC_CONFIG.prayerNamesID;
     return {
-      date: times.date,
-      hijri: times.hijri,
       Fajr: `${names.Fajr}: ${times.Fajr}`,
       Dhuhr: `${names.Dhuhr}: ${times.Dhuhr}`,
       Asr: `${names.Asr}: ${times.Asr}`,
       Maghrib: `${names.Maghrib}: ${times.Maghrib}`,
       Isha: `${names.Isha}: ${times.Isha}`,
+      Sunrise: times.Sunrise ? `Terbit: ${times.Sunrise}` : '',
     };
+  }
+
+  _findCityById(id) {
+    for (const city of Object.values(INDONESIAN_CITIES)) {
+      if (city.id === id) return city;
+    }
+    return null;
   }
 }
 

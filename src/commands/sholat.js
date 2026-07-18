@@ -14,35 +14,34 @@ export default {
 
     if (args.length > 0) {
       const query = args.join(' ');
-      const locations = await islamic.prayer.searchCity(query);
+      const locations = islamic.prayer.searchCity(query);
       if (!locations || locations.length === 0) {
-        return ctx.message.reply(errorText('Kota tidak ditemukan.', 'Coba dengan nama kota yang lebih umum.'));
+        return ctx.message.reply(errorText('Kota tidak ditemukan.', 'Contoh: Surabaya, Jakarta, Malang, Bandung'));
       }
       const city = locations[0];
-      const cityName = city.lokasi || city.name || query;
+      const cityName = city.name || query;
       await ctx.repos.islamic.setCity(ctx.groupId, city.id, cityName);
-      await ctx.message.reply(successText('Kota Diatur', 'Completed', `Kota: ${cityName}\nGunakan !sholat untuk melihat jadwal.`));
-      return;
+      await ctx.repos.islamic.setCoordinates(ctx.groupId, city.lat, city.lng);
+      return ctx.message.reply(successText('Kota Diatur', 'Completed', `Kota: ${cityName}\nGunakan !sholat untuk melihat jadwal.`));
     }
 
     const group = ctx.repos.islamic.getGroup(ctx.groupId);
-    if (!group?.cityId) {
-      return ctx.message.reply(errorText('Kota belum diatur.', `Gunakan: ${ctx.config.prefix}sholat [nama kota]\nContoh: ${ctx.config.prefix}sholat Jakarta`));
+    if (!group?.cityId && !group?.lat) {
+      return ctx.message.reply(errorText('Kota belum diatur.', `Gunakan: ${ctx.config.prefix}sholat [nama kota]\nContoh: ${ctx.config.prefix}sholat Surabaya`));
     }
 
-    const times = await islamic.prayer.getPrayerTimes(ctx.groupId);
+    const times = islamic.prayer.getPrayerTimes(ctx.groupId);
     if (!times) {
-      return ctx.message.reply(errorText('Gagal mengambil jadwal sholat.', 'Coba lagi nanti.'));
+      return ctx.message.reply(errorText('Gagal menghitung jadwal sholat.'));
     }
 
     const formatted = islamic.prayer.formatPrayerTimes(times);
     const lines = [
-      `📍 *${group.cityName || group.cityId}*`,
-      `📅 ${formatted.date || ''}`,
-      formatted.hijri ? `📅 (Hijriyah: ${formatted.hijri})` : '',
+      `📍 *${group.cityName || group.cityId || 'Lokasi'}*`,
       '',
       '🕌 *Jadwal Sholat:*',
       `   ${formatted.Fajr}`,
+      formatted.Sunrise ? `   ${formatted.Sunrise}` : '',
       `   ${formatted.Dhuhr}`,
       `   ${formatted.Asr}`,
       `   ${formatted.Maghrib}`,

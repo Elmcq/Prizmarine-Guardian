@@ -1,7 +1,3 @@
-import myquran from '../../integrations/islamic/myquran.client.js';
-import aladhan from '../../integrations/islamic/aladhan.client.js';
-import { ISLAMIC_CONFIG } from '../../config/islamic.config.js';
-
 const COMPASS_DIRECTIONS = [
   { min: 348.75, max: 360, label: 'Utara (N)', emoji: '🫀' },
   { min: 0, max: 11.25, label: 'Utara (N)', emoji: '🫀' },
@@ -27,30 +23,10 @@ export class QiblaService {
     this.logger = logger;
   }
 
-  async getQiblaDirection(groupId, repo) {
+  getQiblaDirection(groupId, repo) {
     const group = repo.getGroup(groupId);
     if (!group?.lat || !group?.lng) return null;
-
-    try {
-      const data = await aladhan.getQiblaDirection(group.lat, group.lng);
-      const degree = data?.data?.direction;
-      if (degree != null) {
-        return { degree, direction: this._getCompassDirection(degree) };
-      }
-    } catch (err) {
-      this.logger.debug('Aladhan qibla failed, trying MyQuran', { error: err.message });
-    }
-
-    try {
-      const data = await myquran.getQiblaDirection(group.cityId);
-      if (data?.direction != null) {
-        return { degree: data.direction, direction: this._getCompassDirection(data.direction) };
-      }
-    } catch (err) {
-      this.logger.warn('MyQuran qibla also failed', { error: err.message });
-    }
-
-    return null;
+    return this.getQiblaFromCoords(group.lat, group.lng);
   }
 
   getQiblaFromCoords(lat, lng) {

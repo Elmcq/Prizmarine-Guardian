@@ -9,9 +9,9 @@ export default {
     const islamic = ctx.services.islamic;
     if (!islamic) return ctx.message.reply(errorText('Islamic module not loaded.'));
 
-    const hijri = await islamic.hijri.getHijriDate(ctx.groupId, ctx.repos.islamic);
+    const hijri = islamic.hijri.getHijriDate();
     if (!hijri) {
-      return ctx.message.reply(errorText('Gagal mengambil tanggal Hijriyah.'));
+      return ctx.message.reply(errorText('Gagal menghitung tanggal Hijriyah.'));
     }
 
     const formatted = islamic.hijri.formatHijri(hijri);
@@ -24,8 +24,6 @@ export default {
       '',
       `📅 *Tanggal Masehi:*`,
       `   ${gregorian}`,
-      '',
-      `🕌 *Hari:* ${hijri.dayOfWeek || '-'}`,
     ];
 
     await ctx.message.reply(panelText('Hijri Calendar', lines, '📅'));
