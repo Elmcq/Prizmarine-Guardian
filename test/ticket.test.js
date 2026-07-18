@@ -214,6 +214,30 @@ describe('TicketService', () => {
   assert.equal(claimed.assignedStaff.name, 'Yoga');
  });
 
+ it('claim adds staff to group', async () => {
+  let addedPhone;
+  const client = {
+   info: { wid: { _serialized: 'bot@c.us' } },
+   createGroup: async () => ({ gid: { _serialized: 'group-123@g.us' } }),
+   sendMessage: async () => {},
+   getChatById: async () => ({
+    addParticipants: async (ids) => { addedPhone = ids[0]; },
+   }),
+  };
+  service = new TicketService({ repo, logger: mockLogger(), client });
+  await service.create({ userId: 'user1@c.us', category: 'general' });
+  await repo.setChatId('TKT-0001', 'group-123@g.us');
+  await service.claim('TKT-0001', '628123456789', 'Yoga');
+  assert.equal(addedPhone, '628123456789@c.us');
+ });
+
+ it('claim skips adding staff when no chatId', async () => {
+  service = new TicketService({ repo, logger: mockLogger(), client: {} });
+  await service.create({ userId: 'user1@c.us', category: 'general' });
+  const claimed = await service.claim('TKT-0001', '628123456789', 'Yoga');
+  assert.equal(claimed.status, 'Claimed');
+ });
+
  it('claim returns null for non-Open ticket', async () => {
   await service.create({ userId: 'user1@c.us', category: 'technical' });
   await service.claim('TKT-0001', '628123456789', 'Yoga');
@@ -358,9 +382,8 @@ describe('TicketService — group creation', () => {
   assert.equal(updated.chatId, 'group-123@g.us');
  });
 
- it('createTicketGroup includes staff in participants', async () => {
+ it('createTicketGroup does NOT include staff in participants', async () => {
   let capturedParticipants;
-   const contactResolver = { getPhone: (id) => id === '6289999999999@c.us' ? '6289999999999' : null };
    const client = {
     createGroup: async (name, participants) => {
      capturedParticipants = participants;
@@ -372,12 +395,12 @@ describe('TicketService — group creation', () => {
    { phone: '6281111111111', name: 'Staff1' },
    { phone: '6282222222222', name: 'Staff2' },
   ]);
-  service = new TicketService({ repo, logger: mockLogger(), client, staffRepo, contactResolver });
+  service = new TicketService({ repo, logger: mockLogger(), client, staffRepo });
   const ticket = await repo.create({ id: 'TKT-0001', userId: '6289999999999@c.us', category: 'general' });
   await service.createTicketGroup(ticket);
    assert.ok(capturedParticipants.includes('6289999999999@c.us'));
-   assert.ok(capturedParticipants.includes('6281111111111@c.us'));
-   assert.ok(capturedParticipants.includes('6282222222222@c.us'));
+   assert.ok(!capturedParticipants.includes('6281111111111@c.us'));
+   assert.ok(!capturedParticipants.includes('6282222222222@c.us'));
  });
 
  it('createTicketGroup handles API error gracefully', async () => {

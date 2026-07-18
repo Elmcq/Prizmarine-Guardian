@@ -69,7 +69,7 @@ export class TicketService {
   try {
    const groupName = `PRIZMARINE TICKET ${ticket.id}`;
 
-    const participants = [];
+     const participants = [];
     if (ticket.userId.endsWith('@lid') && this.client) {
      try {
       const [mapping] = await this.client.getContactLidAndPhone([ticket.userId]);
@@ -79,18 +79,6 @@ export class TicketService {
      } catch {}
     } else if (ticket.userId.endsWith('@c.us')) {
      participants.push(ticket.userId);
-    }
-    if (this.staffRepo) {
-     const staffList = this.staffRepo.findAll();
-     for (const s of staffList) {
-      const staffPhone = s.phone.replace(/[^0-9]/g, '');
-      if (staffPhone) {
-       const staffWid = `${staffPhone}@c.us`;
-       if (!participants.includes(staffWid)) {
-        participants.push(staffWid);
-       }
-      }
-     }
     }
 
    const chat = await this.client.createGroup(groupName, participants);
@@ -182,6 +170,8 @@ export class TicketService {
   this.logger.info('Ticket claimed', { ticketId: id, staffPhone, staffName });
 
   if (ticket.chatId) {
+   await this.addParticipantToGroup(ticket.chatId, staffPhone);
+
    const msg = [
     `🔵 *Ticket Claimed*`,
     '',
