@@ -41,24 +41,26 @@ export class ModerationService {
    return false;
   }
   try {
-   await this.client.pupPage.evaluate(async (gId, tId) => {
-    const chat = await window.WWebJS.getChat(gId);
-    if (!chat?.groupMetadata?.participants) return false;
-    await window.WWebJS.enforceLidAndPnRetrieval(tId);
+   const result = await this.client.pupPage.evaluate(async (gId, tId) => {
+    const chat = await window.WWebJS.getChat(gId, { getAsModel: false });
+    if (!chat) throw new Error('Chat not found');
+    if (!chat.groupMetadata) throw new Error('Not a group');
     const participants = chat.groupMetadata.participants.getModelsArray();
-    const target = participants.find(p => {
-     if (p.id._serialized === tId) return true;
-     if (p.id._serialized === tId.replace('@c.us', '@lid')) return true;
-     if (p.id._serialized === tId.replace('@lid', '@c.us')) return true;
-     return false;
-    });
-    if (target) {
-     await window.require('WAWebModifyParticipantsGroupAction').removeParticipants(chat, [target]);
-     return true;
+    const target = participants.find(p => p.id._serialized === tId);
+    if (!target) {
+     const lid = tId.replace('@c.us', '@lid');
+     const pn = tId.replace('@lid', '@c.us');
+     const alt = participants.find(p => p.id._serialized === lid || p.id._serialized === pn);
+     if (alt) {
+      await window.require('WAWebModifyParticipantsGroupAction').removeParticipants(chat, [alt]);
+      return true;
+     }
+     throw new Error('Participant not found in group');
     }
-    return false;
+    await window.require('WAWebModifyParticipantsGroupAction').removeParticipants(chat, [target]);
+    return true;
    }, groupId, targetId);
-   return true;
+   return result === true;
   } catch (err) {
    this.logger.warn('Could not remove participant', { targetId, groupId, error: err.message });
    return false;
