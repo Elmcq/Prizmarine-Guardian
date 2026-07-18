@@ -1,4 +1,4 @@
-import { successText, errorText, panelText, GROUP_ONLY } from '../messages.js';
+import { successText, errorText, panelText, GROUP_ONLY } from './messages.js';
 
 export default {
   name: 'prayermode',

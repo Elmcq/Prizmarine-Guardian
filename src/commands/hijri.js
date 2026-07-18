@@ -1,4 +1,4 @@
-import { panelText, GROUP_ONLY, errorText } from '../messages.js';
+import { panelText, GROUP_ONLY, errorText } from './messages.js';
 
 export default {
   name: 'hijri',
