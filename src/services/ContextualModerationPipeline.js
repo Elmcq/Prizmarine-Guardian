@@ -41,6 +41,7 @@ const GENERAL_EXPRESSIONS = [
  /\boh\s+my\s+god\b/i,
  /\bwtf\b/i,
  /\bomg\b/i,
+ /\bdamn\b/i,
 ];
 
 /**
@@ -241,28 +242,29 @@ export class ContextualModerationPipeline {
    return INTENTS.EDUCATIONAL;
   }
 
-  // Target present → PERSONAL_ATTACK (checked BEFORE general expressions)
+  // Check for general expression patterns FIRST (before tier checks)
+  // If text matches a known general expression and no target → IGNORE
+  if (!target.hasTarget) {
+   for (const pattern of GENERAL_EXPRESSIONS) {
+    if (pattern.test(text)) {
+     return INTENTS.GENERAL_EXPRESSION;
+    }
+   }
+  }
+
+  // Target present → PERSONAL_ATTACK
   if (target.hasTarget && !context.isSafe) {
    return INTENTS.PERSONAL_ATTACK;
   }
 
-  // High/slurs tier words are NEVER general expressions — always treated as potential attacks
-  if (maxTier >= TIER_LEVELS.high) {
+  // High/slurs tier words without target are still potential attacks
+  if (maxTier >= TIER_LEVELS.high && !target.hasTarget) {
    return INTENTS.PERSONAL_ATTACK;
   }
 
   // Self-reference → SELF_REFERENCE
   if (target.hasSelfRef && !target.hasTarget) {
    return INTENTS.SELF_REFERENCE;
-  }
-
-  // Check for general expression patterns (sensitive tier only, no target)
-  if (!target.hasTarget && maxTier < TIER_LEVELS.high) {
-   for (const pattern of GENERAL_EXPRESSIONS) {
-    if (pattern.test(text)) {
-     return INTENTS.GENERAL_EXPRESSION;
-    }
-   }
   }
 
   // No target, no general expression → general expression for sensitive words
