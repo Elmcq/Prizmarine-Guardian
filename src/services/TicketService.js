@@ -158,17 +158,16 @@ export class TicketService {
    this.logger.info('Ticket closed', { ticketId: id, closedBy });
    if (ticket.chatId && this.client) {
     try {
-     const chat = await this.client.getChatById(ticket.chatId);
-     if (chat?.participants) {
-      for (const participant of chat.participants) {
-       const id = participant.id?._serialized;
-       if (id && !id.includes(this.client.info?.wid?._serialized || '___NOMATCH___')) {
-        try { await chat.removeParticipants([id]); } catch {}
-       }
-      }
-     }
      await this.client.pupPage.evaluate(async (chatId) => {
       const chat = await window.WWebJS.getChat(chatId, { getAsModel: false });
+      const me = window.Store.User.getMaybeMeUser();
+      if (chat.participants) {
+       for (const p of chat.participants) {
+        if (p.id && p.id._serialized !== me._serialized) {
+         try { await window.require('WAWebGroupParticipantRemoveJob').sendGroupParticipantRemove(chat, p.id); } catch {}
+        }
+       }
+      }
       return window.require('WAWebExitGroupAction').sendExitGroup(chat);
      }, ticket.chatId);
      this.logger.info('Left ticket group', { ticketId: id, chatId: ticket.chatId });

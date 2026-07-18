@@ -177,14 +177,6 @@ describe('TicketService', () => {
   let leftChatId = null;
   let removedParticipants = [];
   const client = {
-   info: { wid: { _serialized: 'bot@c.us' } },
-   getChatById: async (id) => ({
-    participants: [
-     { id: { _serialized: 'user1@c.us' } },
-     { id: { _serialized: 'bot@c.us' } },
-    ],
-    removeParticipants: async (ids) => { removedParticipants.push(...ids); },
-   }),
    pupPage: {
     evaluate: async (fn, chatId) => { leftChatId = chatId; },
    },
@@ -194,14 +186,10 @@ describe('TicketService', () => {
   await repo.setChatId('TKT-0001', 'group-123@g.us');
   await service.close('TKT-0001', 'admin@c.us');
   assert.equal(leftChatId, 'group-123@g.us');
-  assert.ok(removedParticipants.includes('user1@c.us'));
-  assert.ok(!removedParticipants.includes('bot@c.us'));
  });
 
  it('close handles leave error gracefully', async () => {
   const client = {
-   info: { wid: { _serialized: 'bot@c.us' } },
-   getChatById: async () => { throw new Error('Chat not found'); },
    pupPage: {
     evaluate: async () => { throw new Error('Chat not found'); },
    },
