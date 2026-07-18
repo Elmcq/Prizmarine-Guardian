@@ -158,11 +158,11 @@ export class TicketService {
    this.logger.info('Ticket closed', { ticketId: id, closedBy });
    if (ticket.chatId && this.client) {
     try {
-     const chat = await this.client.getChatById(ticket.chatId);
-     if (chat && typeof chat.leave === 'function') {
-      await chat.leave();
-      this.logger.info('Left ticket group', { ticketId: id, chatId: ticket.chatId });
-     }
+     await this.client.pupPage.evaluate(async (chatId) => {
+      const chat = await window.WWebJS.getChat(chatId, { getAsModel: false });
+      return window.require('WAWebExitGroupAction').sendExitGroup(chat);
+     }, ticket.chatId);
+     this.logger.info('Left ticket group', { ticketId: id, chatId: ticket.chatId });
     } catch (err) {
      this.logger.error('Failed to leave ticket group', { ticketId: id, chatId: ticket.chatId, error: err.message });
     }
