@@ -11,7 +11,7 @@ export default {
   const targets = getMentionedIds(ctx.message);
   const target = targets[0] || ctx.authorId;
 
-  if (targets.length && !ctx.isAdmin) {
+  if (targets.length && !ctx.isAdmin && !ctx.isOwner) {
    return ctx.message.reply(usageText(ctx.config.prefix, 'clearwarn', 'You can only clear your own warnings.'));
   }
 
