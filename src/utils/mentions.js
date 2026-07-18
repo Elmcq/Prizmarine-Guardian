@@ -46,21 +46,23 @@ export function mentionText(userId) {
  * @returns {Promise<string>}
  */
 export async function extractReason(args, mentionedIds, client) {
-  const filtered = Array.isArray(args) ? [...args] : [];
-  if (mentionedIds && mentionedIds.length) {
-    const names = new Set();
-    for (const id of mentionedIds) {
-      try {
-        const contact = await client.getContactById(id);
-        if (contact?.name) names.add(contact.name.toLowerCase());
-        if (contact?.pushname) names.add(contact.pushname.toLowerCase());
-      } catch {
-        /* ignore */
-      }
-    }
-    for (let i = filtered.length - 1; i >= 0; i -= 1) {
-      if (names.has(filtered[i].toLowerCase())) filtered.splice(i, 1);
-    }
+ const filtered = Array.isArray(args) ? [...args] : [];
+ if (mentionedIds && mentionedIds.length) {
+  const names = new Set();
+  for (const id of mentionedIds) {
+   const number = String(id).split('@')[0];
+   names.add(number);
+   try {
+    const contact = await client.getContactById(id);
+    if (contact?.name) names.add(contact.name.toLowerCase());
+    if (contact?.pushname) names.add(contact.pushname.toLowerCase());
+   } catch {
+    /* ignore */
+   }
   }
-  return filtered.join(' ').trim();
+  for (let i = filtered.length - 1; i >= 0; i -= 1) {
+   if (names.has(filtered[i].toLowerCase()) || names.has(filtered[i])) filtered.splice(i, 1);
+  }
+ }
+ return filtered.join(' ').trim();
 }
