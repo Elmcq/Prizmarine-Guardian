@@ -37,6 +37,8 @@ import claim from './claim.js';
 import resolve from './resolve.js';
 import addstaff from './addstaff.js';
 import removestaff from './removestaff.js';
+import lock from './lock.js';
+import unlock from './unlock.js';
 
 const modules = [
  warn,
@@ -78,6 +80,8 @@ const modules = [
  resolve,
  addstaff,
  removestaff,
+ lock,
+ unlock,
 ];
 
 export const commandRegistry = new Map();
