@@ -42,17 +42,21 @@ export function registerMessageHandler({ client, repos, services, config, logger
  const args = spaceIdx === -1 ? [] : withoutPrefix.slice(spaceIdx + 1).trim().split(/\s+/).filter(Boolean);
  const command = commandRegistry.get(cmdName);
  if (command) {
- const guard = guardCommand({ userId: authorId, command: cmdName, rateLimiter });
- if (!guard.allowed) {
- if (guard.reason === 'cooldown') await message.reply(cooldownText(guard.retryAfterSec || 3));
- else await message.reply(`🚫 Too many commands. Try again in ${guard.retryAfterSec || 1}s.`);
- return;
- }
- if (command.adminOnly && !(ownerCheck || isAdmin)) {
- await message.reply(UNAUTHORIZED_TEXT);
- return;
- }
-  const ctx = { message, args, client, config, logger, eventBus, repos, services, rateLimiter, commandRegistry, chat, authorId, authorName, groupId, isAdmin, isOwner: ownerCheck, commandName: cmdName };
+  const guard = guardCommand({ userId: authorId, command: cmdName, rateLimiter });
+  if (!guard.allowed) {
+  if (guard.reason === 'cooldown') await message.reply(cooldownText(guard.retryAfterSec || 3));
+  else await message.reply(`🚫 Too many commands. Try again in ${guard.retryAfterSec || 1}s.`);
+  return;
+  }
+  if (command.adminOnly && !(ownerCheck || isAdmin)) {
+  await message.reply(UNAUTHORIZED_TEXT);
+  return;
+  }
+   if (services.islamic?.prayerMode?.shouldBlock(groupId, cmdName)) {
+  await message.reply('🕌 Mode sholat aktif. Command diblokir sementara.');
+  return;
+   }
+   const ctx = { message, args, client, config, logger, eventBus, repos, services, rateLimiter, commandRegistry, chat, authorId, authorName, groupId, isAdmin, isOwner: ownerCheck, commandName: cmdName };
  try {
  await command.run(ctx);
  eventBus.emit(EVENTS.COMMAND_EXECUTED, { command: cmdName, authorId, groupId });

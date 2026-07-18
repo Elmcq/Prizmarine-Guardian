@@ -18,8 +18,9 @@ export const DB_FILES = Object.freeze({
  sticker: path.join(DATA_DIR, 'sticker.json'),
   rules: path.join(DATA_DIR, 'rules.json'),
    audit: path.join(DATA_DIR, 'audit.json'),
-   tickets: path.join(DATA_DIR, 'tickets.json'),
-   staff: path.join(DATA_DIR, 'staff.json'),
+    tickets: path.join(DATA_DIR, 'tickets.json'),
+    staff: path.join(DATA_DIR, 'staff.json'),
+    islamic: path.join(DATA_DIR, 'islamic.json'),
 });
 
 export const BACKUP_DIR = path.join(DATA_DIR, 'backups');
@@ -35,8 +36,10 @@ export const EVENTS = Object.freeze({
  STICKER_EVENT: 'sticker:event',
  RULE_CHANGED: 'rule:changed',
  SETTINGS_CHANGED: 'settings:changed',
- USER_KICKED: 'user:kicked',
- TOXICITY_DETECTED: 'toxicity:detected',
+  USER_KICKED: 'user:kicked',
+  TOXICITY_DETECTED: 'toxicity:detected',
+  PRAYER_REMINDER: 'prayer:reminder',
+  PRAYER_MODE_TOGGLED: 'prayermode:toggled',
 });
 
 export const LIMITS = Object.freeze({
@@ -136,5 +139,9 @@ badwords: {
   },
   staff: {
   records: [],
+  },
+  islamic: {
+  groups: {},
+  prayerCache: {},
   },
 });

@@ -39,6 +39,11 @@ import addstaff from './addstaff.js';
 import removestaff from './removestaff.js';
 import lock from './lock.js';
 import unlock from './unlock.js';
+import sholat from './sholat.js';
+import hijri from './hijri.js';
+import qibla from './qibla.js';
+import prayermode from './prayermode.js';
+import islamic from './islamic.js';
 
 const modules = [
  warn,
@@ -80,8 +85,13 @@ const modules = [
  resolve,
  addstaff,
  removestaff,
- lock,
- unlock,
+  lock,
+  unlock,
+  sholat,
+  hijri,
+  qibla,
+  prayermode,
+  islamic,
 ];
 
 export const commandRegistry = new Map();

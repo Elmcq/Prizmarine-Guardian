@@ -19,6 +19,7 @@ import { RuleRepository } from './database/repositories/RuleRepository.js';
 import { AuditRepository } from './database/repositories/AuditRepository.js';
 import { TicketRepository } from './database/repositories/TicketRepository.js';
 import { StaffRepository } from './database/repositories/StaffRepository.js';
+import { IslamicRepository } from './database/repositories/IslamicRepository.js';
 import { ToxicityService } from './services/ToxicityService.js';
 import { ModerationService } from './services/ModerationService.js';
 import { SpamService } from './services/SpamService.js';
@@ -35,6 +36,7 @@ import { PermissionService } from './services/PermissionService.js';
 import { AuditService } from './services/AuditService.js';
 import { TicketService } from './services/TicketService.js';
 import { StaffService } from './services/StaffService.js';
+import { IslamicService } from './services/islamic/islamic.service.js';
 import { ContactResolver } from './services/ContactResolver.js';
 import { registerMessageHandler } from './handlers/messageHandler.js';
 import { registerReadyHandler } from './handlers/readyHandler.js';
@@ -65,8 +67,9 @@ async function bootstrap() {
  sticker: new StickerRepository(db),
   rules: new RuleRepository(db),
    audit: new AuditRepository(db),
-   tickets: new TicketRepository(db),
-   staff: new StaffRepository(db),
+    tickets: new TicketRepository(db),
+    staff: new StaffRepository(db),
+    islamic: new IslamicRepository(db),
   };
 
  const toxicity = new ToxicityService(badwords, logger);
@@ -82,20 +85,22 @@ async function bootstrap() {
  const permissionService = new PermissionService({ config });
  const audit = new AuditService({ repo: repos.audit, eventBus, logger }).start();
  const ticketService = new TicketService({ repo: repos.tickets, logger, staffRepo: repos.staff });
- const staffService = new StaffService({ repo: repos.staff, logger });
+  const staffService = new StaffService({ repo: repos.staff, logger });
+  const islamicService = new IslamicService({ repo: repos.islamic, client: null, logger, eventBus });
  const backup = new BackupService(db, { keep: 14 });
 
  const client = new Client({
  authStrategy: new LocalAuth({ dataPath: '.wwebjs_auth' }),
  puppeteer: { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage'] },
  });
- moderation.setClient(client);
- permissionService.setClient(client);
- ticketService.setClient(client);
+  moderation.setClient(client);
+  permissionService.setClient(client);
+  ticketService.setClient(client);
+  islamicService.client = client;
  const contactResolver = new ContactResolver(client, logger, repos.settings);
  ticketService.contactResolver = contactResolver;
 
- const services = { toxicity, nsfw: nsfwService, advertisement: advertisementService, raid: raidService, sticker: stickerService, spam, moderation, health, backup, rule: ruleService, permission: permissionService, audit, ticket: ticketService, staff: staffService };
+  const services = { toxicity, nsfw: nsfwService, advertisement: advertisementService, raid: raidService, sticker: stickerService, spam, moderation, health, backup, rule: ruleService, permission: permissionService, audit, ticket: ticketService, staff: staffService, islamic: islamicService };
 
  registerMessageHandler({ client, repos, services, config, logger, eventBus, rateLimiter, commandRegistry, contactResolver });
  registerNSFWHandler({ client, repos, services, config, logger, eventBus, nsfwService });
@@ -112,8 +117,9 @@ async function bootstrap() {
  client.on('authenticated', () => logger.info('Session authenticated.'));
  client.on('auth_failure', (msg) => logger.error('Auth failure', { msg }));
 
- const scheduler = new SchedulerService({ client, repos, moderation, backup, health, config, logger, eventBus, raid: { service: raidService, repo: repos.raid }, sticker: { service: stickerService, repo: repos.sticker } });
- scheduler.start();
+  const scheduler = new SchedulerService({ client, repos, moderation, backup, health, config, logger, eventBus, raid: { service: raidService, repo: repos.raid }, sticker: { service: stickerService, repo: repos.sticker } });
+  scheduler.start();
+  islamicService.start();
 
  let dashboardServer = null;
  if (config.dashboardToken) {
@@ -133,9 +139,10 @@ async function bootstrap() {
  shuttingDown = true;
  logger.info(`Received ${signal}. Shutting down gracefully...`);
  try {
- if (dashboardServer) dashboardServer.close();
- scheduler.stop();
- audit.stop();
+    if (dashboardServer) dashboardServer.close();
+    scheduler.stop();
+    islamicService.stop();
+    audit.stop();
  await client.destroy();
  } catch (err) {
  logger.error('Error during shutdown', { error: err.message });
