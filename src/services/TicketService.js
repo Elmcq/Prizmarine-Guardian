@@ -172,6 +172,7 @@ export class TicketService {
      }, ticket.chatId);
      this.logger.info('Left ticket group', { ticketId: id, chatId: ticket.chatId });
     } catch (err) {
+     console.error('[TICKET-LEAVE-ERROR]', err.message, err.stack);
      this.logger.error('Failed to leave ticket group', { ticketId: id, chatId: ticket.chatId, error: err.message });
     }
    }
