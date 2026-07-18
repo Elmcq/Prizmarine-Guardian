@@ -27,15 +27,18 @@ function mockLogger() {
 
 function mockClient(createGroupResult = { gid: { _serialized: 'group-123@g.us' } }) {
  return {
+  info: { wid: { _serialized: 'bot@c.us' } },
   createGroup: async () => createGroupResult,
   sendMessage: async () => {},
   getContactById: async () => ({ number: '123456789' }),
+  pupPage: { evaluate: async () => {} },
  };
 }
 
 function mockStaffRepo(staff = []) {
  return {
   findAll: () => staff,
+  findByAuthorId: () => null,
  };
 }
 
@@ -53,6 +56,7 @@ describe('TicketRepository', () => {
   assert.equal(ticket.id, 'TKT-0001');
   assert.equal(ticket.status, 'Open');
   assert.equal(ticket.userId, 'user1@c.us');
+  assert.equal(ticket.assignedStaff, null);
  });
 
  it('create stores category', async () => {
@@ -107,12 +111,48 @@ describe('TicketRepository', () => {
   assert.equal(result, null);
  });
 
- it('reopen sets status back to Open', async () => {
+ it('claim sets status Claimed with assignedStaff', async () => {
   await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
-  await repo.close('TKT-0001', 'admin@c.us');
+  const claimed = await repo.claim('TKT-0001', '628123456789', 'Yoga');
+  assert.equal(claimed.status, 'Claimed');
+  assert.equal(claimed.assignedStaff.phone, '628123456789');
+  assert.equal(claimed.assignedStaff.name, 'Yoga');
+  assert.ok(claimed.claimedAt);
+ });
+
+ it('claim returns null for non-Open ticket', async () => {
+  await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  await repo.claim('TKT-0001', '628123456789', 'Yoga');
+  const result = await repo.claim('TKT-0001', '6289999999999', 'Other');
+  assert.equal(result, null);
+ });
+
+ it('claim returns null for missing ticket', async () => {
+  const result = await repo.claim('TKT-9999', '628123456789', 'Yoga');
+  assert.equal(result, null);
+ });
+
+ it('resolve sets status Resolved', async () => {
+  await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  await repo.claim('TKT-0001', '628123456789', 'Yoga');
+  const resolved = await repo.resolve('TKT-0001');
+  assert.equal(resolved.status, 'Resolved');
+  assert.ok(resolved.resolvedAt);
+ });
+
+ it('resolve returns null for non-Claimed ticket', async () => {
+  await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  const result = await repo.resolve('TKT-0001');
+  assert.equal(result, null);
+ });
+
+ it('reopen resets all status fields', async () => {
+  await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
+  await repo.claim('TKT-0001', '628123456789', 'Yoga');
+  await repo.resolve('TKT-0001');
   const reopened = await repo.reopen('TKT-0001');
   assert.equal(reopened.status, 'Open');
-  assert.equal(reopened.closedAt, null);
+  assert.equal(reopened.assignedStaff, null);
  });
 
  it('count returns total tickets', async () => {
@@ -167,6 +207,33 @@ describe('TicketService', () => {
   assert.equal(ticket.description, 'help');
  });
 
+ it('claim marks ticket as Claimed', async () => {
+  await service.create({ userId: 'user1@c.us', category: 'technical' });
+  const claimed = await service.claim('TKT-0001', '628123456789', 'Yoga');
+  assert.equal(claimed.status, 'Claimed');
+  assert.equal(claimed.assignedStaff.name, 'Yoga');
+ });
+
+ it('claim returns null for non-Open ticket', async () => {
+  await service.create({ userId: 'user1@c.us', category: 'technical' });
+  await service.claim('TKT-0001', '628123456789', 'Yoga');
+  const result = await service.claim('TKT-0001', '6289999999999', 'Other');
+  assert.equal(result, null);
+ });
+
+ it('resolve marks ticket as Resolved', async () => {
+  await service.create({ userId: 'user1@c.us', category: 'technical' });
+  await service.claim('TKT-0001', '628123456789', 'Yoga');
+  const resolved = await service.resolve('TKT-0001');
+  assert.equal(resolved.status, 'Resolved');
+ });
+
+ it('resolve returns null for non-Claimed ticket', async () => {
+  await service.create({ userId: 'user1@c.us', category: 'technical' });
+  const result = await service.resolve('TKT-0001');
+  assert.equal(result, null);
+ });
+
  it('close marks ticket as Closed', async () => {
   await service.create({ userId: 'user1@c.us', category: 'technical' });
   const closed = await service.close('TKT-0001', 'admin@c.us');
@@ -217,6 +284,15 @@ describe('TicketService', () => {
   assert.ok(text.includes('🟢 Open'));
  });
 
+ it('formatTicket shows assigned staff', async () => {
+  await service.create({ userId: 'user1@c.us', category: 'general' });
+  await service.claim('TKT-0001', '628123456789', 'Yoga');
+  const ticket = repo.findById('TKT-0001');
+  const text = service.formatTicket(ticket);
+  assert.ok(text.includes('Yoga'));
+  assert.ok(text.includes('🔵 Claimed'));
+ });
+
  it('formatList produces readable text', async () => {
   await service.create({ userId: 'user1@c.us', category: 'general' });
   await service.create({ userId: 'user2@c.us', category: 'technical' });
@@ -238,6 +314,19 @@ describe('TicketService', () => {
   assert.ok(text.includes('Total: 2'));
   assert.ok(text.includes('Open: 1'));
   assert.ok(text.includes('Closed: 1'));
+ });
+
+ it('sendStatusMessage sends message to group', async () => {
+  let sentMessage = null;
+  const client = { sendMessage: async (chatId, msg) => { sentMessage = msg; } };
+  service = new TicketService({ repo, logger: mockLogger(), client });
+  await service.sendStatusMessage('group-123@g.us', { id: 'TKT-0001' }, 'Test message');
+  assert.equal(sentMessage, 'Test message');
+ });
+
+ it('sendStatusMessage handles no client', async () => {
+  service = new TicketService({ repo, logger: mockLogger() });
+  await service.sendStatusMessage('group-123@g.us', { id: 'TKT-0001' }, 'Test message');
  });
 });
 
@@ -271,6 +360,7 @@ describe('TicketService — group creation', () => {
 
  it('createTicketGroup includes staff in participants', async () => {
   let capturedParticipants;
+   const contactResolver = { getPhone: (id) => id === '6289999999999@c.us' ? '6289999999999' : null };
    const client = {
     createGroup: async (name, participants) => {
      capturedParticipants = participants;
@@ -282,7 +372,7 @@ describe('TicketService — group creation', () => {
    { phone: '6281111111111', name: 'Staff1' },
    { phone: '6282222222222', name: 'Staff2' },
   ]);
-  service = new TicketService({ repo, logger: mockLogger(), client, staffRepo });
+  service = new TicketService({ repo, logger: mockLogger(), client, staffRepo, contactResolver });
   const ticket = await repo.create({ id: 'TKT-0001', userId: '6289999999999@c.us', category: 'general' });
   await service.createTicketGroup(ticket);
    assert.ok(capturedParticipants.includes('6289999999999@c.us'));
@@ -293,7 +383,7 @@ describe('TicketService — group creation', () => {
  it('createTicketGroup handles API error gracefully', async () => {
   const client = {
    createGroup: async () => { throw new Error('WhatsApp API error'); },
-   getChatById: async () => ({ sendMessage: async () => {} }),
+   sendMessage: async () => {},
   };
   service = new TicketService({ repo, logger: mockLogger(), client });
   const ticket = await repo.create({ id: 'TKT-0001', userId: 'user1@c.us', category: 'general' });
@@ -364,5 +454,67 @@ describe('TicketService — group creation', () => {
   assert.ok(sentMessage.includes('TKT-0001'));
   assert.ok(sentMessage.includes('Technical Issue'));
   assert.ok(sentMessage.includes('Bug in login'));
+ });
+});
+
+describe('Ticket lifecycle', () => {
+ let service;
+ let repo;
+
+ beforeEach(() => {
+  const dbService = mockDbService();
+  repo = new TicketRepository(dbService);
+  service = new TicketService({ repo, logger: mockLogger(), client: mockClient() });
+ });
+
+ it('full lifecycle: create → claim → resolve → close', async () => {
+  const ticket = await service.create({ userId: 'user1@c.us', category: 'general', description: 'help' });
+  assert.equal(ticket.status, 'Open');
+
+  const claimed = await service.claim('TKT-0001', '628123456789', 'Yoga');
+  assert.equal(claimed.status, 'Claimed');
+  assert.equal(claimed.assignedStaff.name, 'Yoga');
+
+  const resolved = await service.resolve('TKT-0001');
+  assert.equal(resolved.status, 'Resolved');
+
+  const closed = await service.close('TKT-0001', 'admin@c.us');
+  assert.equal(closed.status, 'Closed');
+ });
+
+ it('cannot claim already claimed ticket', async () => {
+  await service.create({ userId: 'user1@c.us', category: 'general' });
+  await service.claim('TKT-0001', '628123456789', 'Yoga');
+  const result = await service.claim('TKT-0001', '6289999999999', 'Other');
+  assert.equal(result, null);
+ });
+
+ it('cannot resolve unclaimed ticket', async () => {
+  await service.create({ userId: 'user1@c.us', category: 'general' });
+  const result = await service.resolve('TKT-0001');
+  assert.equal(result, null);
+ });
+
+ it('cannot claim closed ticket', async () => {
+  await service.create({ userId: 'user1@c.us', category: 'general' });
+  await service.close('TKT-0001', 'admin@c.us');
+  const result = await service.claim('TKT-0001', '628123456789', 'Yoga');
+  assert.equal(result, null);
+ });
+
+ it('formatList shows assigned staff', async () => {
+  await service.create({ userId: 'user1@c.us', category: 'general' });
+  await service.claim('TKT-0001', '628123456789', 'Yoga');
+  const text = service.formatList(repo.findAll());
+  assert.ok(text.includes('Yoga'));
+ });
+
+ it('formatStats includes new statuses', async () => {
+  await service.create({ userId: 'user1@c.us', category: 'general' });
+  await service.create({ userId: 'user2@c.us', category: 'general' });
+  await service.claim('TKT-0001', '628123456789', 'Yoga');
+  const text = service.formatStats();
+  assert.ok(text.includes('Open: 1'));
+  assert.ok(text.includes('Claimed: 1'));
  });
 });

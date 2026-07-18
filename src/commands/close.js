@@ -47,10 +47,11 @@ export default {
   ctx.logger.info('Ticket closed by staff', { ticketId, staff: ctx.authorId });
 
   const lines = [
-   `✅ *Ticket Closed*`,
+   `🔴 *Ticket Closed*`,
    '',
    `ID: *${ticketId}*`,
    `Category: ${ticket.category}`,
+   `Status: Closed`,
    `Closed by: @${ctx.authorId.replace(/@c\.us$/, '')}`,
    `Time: ${new Date(closed.closedAt).toLocaleString()}`,
   ];

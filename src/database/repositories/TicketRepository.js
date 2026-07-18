@@ -1,9 +1,11 @@
 /**
  * @file TicketRepository — CRUD for support ticket records (data/tickets.json).
  * Each ticket tracks a WhatsApp support request with status, category, and metadata.
+ * Supports lifecycle: OPEN → CLAIMED → RESOLVED → CLOSED
  */
 
 const CATEGORIES = ['general', 'technical', 'abuse', 'feature', 'other'];
+const STATUSES = ['Open', 'Claimed', 'Resolved', 'Closed'];
 
 export class TicketRepository {
  constructor(dbService) {
@@ -27,6 +29,10 @@ export class TicketRepository {
   return this.db.data.records.filter((r) => r.status === 'Open');
  }
 
+ findActive() {
+  return this.db.data.records.filter((r) => r.status !== 'Closed');
+ }
+
  findAll() {
   return this.db.data.records;
  }
@@ -38,10 +44,13 @@ export class TicketRepository {
    category: CATEGORIES.includes(category) ? category : 'general',
    description: description || '',
    status: 'Open',
+   assignedStaff: null,
    groupId: groupId || null,
    groupName: groupName || null,
    chatId: null,
    createdAt: Date.now(),
+   claimedAt: null,
+   resolvedAt: null,
    closedAt: null,
    closedBy: null,
   };
@@ -54,6 +63,27 @@ export class TicketRepository {
   const record = this.findById(id);
   if (!record) return null;
   record.chatId = chatId;
+  await this.dbService.persist(this.db);
+  return record;
+ }
+
+ async claim(id, staffPhone, staffName) {
+  const record = this.findById(id);
+  if (!record) return null;
+  if (record.status !== 'Open') return null;
+  record.status = 'Claimed';
+  record.assignedStaff = { phone: staffPhone, name: staffName };
+  record.claimedAt = Date.now();
+  await this.dbService.persist(this.db);
+  return record;
+ }
+
+ async resolve(id) {
+  const record = this.findById(id);
+  if (!record) return null;
+  if (record.status !== 'Claimed') return null;
+  record.status = 'Resolved';
+  record.resolvedAt = Date.now();
   await this.dbService.persist(this.db);
   return record;
  }
@@ -72,6 +102,9 @@ export class TicketRepository {
   const record = this.findById(id);
   if (!record) return null;
   record.status = 'Open';
+  record.assignedStaff = null;
+  record.claimedAt = null;
+  record.resolvedAt = null;
   record.closedAt = null;
   record.closedBy = null;
   await this.dbService.persist(this.db);
@@ -85,12 +118,14 @@ export class TicketRepository {
  getStats() {
   const records = this.db.data.records;
   const open = records.filter((r) => r.status === 'Open').length;
+  const claimed = records.filter((r) => r.status === 'Claimed').length;
+  const resolved = records.filter((r) => r.status === 'Resolved').length;
   const closed = records.filter((r) => r.status === 'Closed').length;
   const byCategory = {};
   for (const r of records) {
    byCategory[r.category] = (byCategory[r.category] || 0) + 1;
   }
-  return { total: records.length, open, closed, byCategory };
+  return { total: records.length, open, claimed, resolved, closed, byCategory };
  }
 }
 

@@ -1,7 +1,7 @@
 /**
  * @file TicketService — business logic for WhatsApp support tickets.
- * Handles ticket creation, closing, listing, and formatted output.
- * Supports automatic WhatsApp group creation for ticket management.
+ * Handles ticket lifecycle (OPEN → CLAIMED → RESOLVED → CLOSED),
+ * staff assignment, group creation, and formatted output.
  */
 
 const CATEGORY_LABELS = {
@@ -10,6 +10,20 @@ const CATEGORY_LABELS = {
  abuse: 'Abuse Report',
  feature: 'Feature Request',
  other: 'Other',
+};
+
+const STATUS_ICONS = {
+ Open: '🟢',
+ Claimed: '🔵',
+ Resolved: '🟡',
+ Closed: '🔴',
+};
+
+const STATUS_LABELS = {
+ Open: '🟢 Open',
+ Claimed: '🔵 Claimed',
+ Resolved: '🟡 Resolved',
+ Closed: '🔴 Closed',
 };
 
 const DIVIDER = '━━━━━━━━━━━━━━';
@@ -27,18 +41,12 @@ export class TicketService {
   this.client = client;
  }
 
- /**
-  * Generate a unique ticket ID like TKT-0001.
-  */
  generateId() {
   const count = this.repo.count();
   const num = String(count + 1).padStart(4, '0');
   return `TKT-${num}`;
  }
 
- /**
-  * Create a new ticket.
-  */
  async create({ userId, category, description, groupId, groupName }) {
   const id = this.generateId();
   const ticket = await this.repo.create({
@@ -53,11 +61,6 @@ export class TicketService {
   return ticket;
  }
 
- /**
-  * Create a WhatsApp group for the ticket.
-  * @param {object} ticket - The ticket record.
-  * @returns {Promise<{chatId: string|null, error: string|null}>}
-  */
  async createTicketGroup(ticket) {
   if (!this.client) {
    return { chatId: null, error: 'WhatsApp client not available' };
@@ -123,9 +126,6 @@ export class TicketService {
   }
  }
 
- /**
-  * Send a welcome message to the ticket group.
-  */
  async sendWelcomeMessage(chatId, ticket) {
   if (!this.client) return;
 
@@ -136,10 +136,11 @@ export class TicketService {
     '',
     DIVIDER,
     `Category: ${cat}`,
+    `Status: ${STATUS_LABELS[ticket.status] || ticket.status}`,
     `Created by: @${ticket.userId.replace(/@c\.us$/, '')}`,
     ticket.description ? `Description: ${ticket.description}` : null,
     '',
-    `Use *!close ${ticket.id}* to close this ticket.`,
+    `Staff commands: *!claim ${ticket.id}* → *!resolve ${ticket.id}* → *!close ${ticket.id}*`,
     DIVIDER,
    ].filter(Boolean);
 
@@ -149,13 +150,90 @@ export class TicketService {
   }
  }
 
- /**
-  * Close a ticket and leave its WhatsApp group.
-  */
+ async sendStatusMessage(chatId, ticket, message) {
+  if (!this.client || !chatId) return;
+
+  try {
+   await this.client.sendMessage(chatId, message);
+  } catch (err) {
+   this.logger.error('Failed to send status message', { ticketId: ticket.id, chatId, error: err.message });
+  }
+ }
+
+ async addParticipantToGroup(chatId, phone) {
+  if (!this.client || !chatId || !phone) return false;
+
+  try {
+   const chat = await this.client.getChatById(chatId);
+   if (chat?.addParticipants) {
+    await chat.addParticipants([`${phone}@c.us`]);
+    return true;
+   }
+  } catch (err) {
+   this.logger.error('Failed to add participant to group', { chatId, phone, error: err.message });
+  }
+  return false;
+ }
+
+ async claim(id, staffPhone, staffName) {
+  const ticket = await this.repo.claim(id, staffPhone, staffName);
+  if (!ticket) return null;
+
+  this.logger.info('Ticket claimed', { ticketId: id, staffPhone, staffName });
+
+  if (ticket.chatId) {
+   const msg = [
+    `🔵 *Ticket Claimed*`,
+    '',
+    `Staff: *${staffName}* (${staffPhone})`,
+    `Status: ${STATUS_LABELS.Claimed}`,
+    '',
+    `Use *!resolve ${ticket.id}* when done.`,
+   ].join('\n');
+   await this.sendStatusMessage(ticket.chatId, ticket, msg);
+  }
+
+  return ticket;
+ }
+
+ async resolve(id) {
+  const ticket = await this.repo.resolve(id);
+  if (!ticket) return null;
+
+  this.logger.info('Ticket resolved', { ticketId: id });
+
+  if (ticket.chatId) {
+   const staffInfo = ticket.assignedStaff ? ` by ${ticket.assignedStaff.name}` : '';
+   const msg = [
+    `🟡 *Ticket Resolved*`,
+    '',
+    `Status: ${STATUS_LABELS.Resolved}`,
+    ticket.assignedStaff ? `Staff: *${ticket.assignedStaff.name}*` : null,
+    '',
+    `Use *!close ${ticket.id}* to close this ticket.`,
+   ].filter(Boolean).join('\n');
+   await this.sendStatusMessage(ticket.chatId, ticket, msg);
+  }
+
+  return ticket;
+ }
+
  async close(id, closedBy) {
   const ticket = await this.repo.close(id, closedBy);
   if (ticket) {
    this.logger.info('Ticket closed', { ticketId: id, closedBy });
+
+   if (ticket.chatId) {
+    const msg = [
+     `🔴 *Ticket Closed*`,
+     '',
+     `Status: ${STATUS_LABELS.Closed}`,
+     `Closed by: @${closedBy.replace(/@c\.us$/, '')}`,
+     `Time: ${new Date(ticket.closedAt).toLocaleString()}`,
+    ].join('\n');
+    await this.sendStatusMessage(ticket.chatId, ticket, msg);
+   }
+
    if (ticket.chatId && this.client) {
     try {
      const meId = this.client.info.wid._serialized;
@@ -191,19 +269,20 @@ export class TicketService {
   return ticket;
  }
 
- /**
-  * Format a single ticket for display.
-  */
  formatTicket(ticket) {
   const cat = CATEGORY_LABELS[ticket.category] || ticket.category;
+  const statusIcon = STATUS_ICONS[ticket.status] || '⚪';
   const lines = [
    `🎫 *Ticket ${ticket.id}*`,
    '',
    DIVIDER,
    `Category: ${cat}`,
-   `Status: ${ticket.status === 'Open' ? '🟢 Open' : '🔴 Closed'}`,
+   `Status: ${statusIcon} ${ticket.status}`,
    `User: @${ticket.userId.replace(/@c\.us$/, '')}`,
   ];
+  if (ticket.assignedStaff) {
+   lines.push(`Assigned: *${ticket.assignedStaff.name}* (${ticket.assignedStaff.phone})`);
+  }
   if (ticket.description) lines.push(`Description: ${ticket.description}`);
   if (ticket.groupName) lines.push(`Group: ${ticket.groupName}`);
   if (ticket.chatId) lines.push(`Support Group: ${ticket.chatId}`);
@@ -214,24 +293,19 @@ export class TicketService {
   return lines.join('\n');
  }
 
- /**
-  * Format a list of tickets.
-  */
  formatList(tickets) {
   if (!tickets.length) return '📋 No tickets found.';
   const lines = ['📋 *Ticket List*', '', DIVIDER];
   for (const t of tickets) {
-   const icon = t.status === 'Open' ? '🟢' : '🔴';
+   const icon = STATUS_ICONS[t.status] || '⚪';
    const cat = CATEGORY_LABELS[t.category] || t.category;
-   lines.push(`${icon} *${t.id}* — ${cat} — @${t.userId.replace(/@c\.us$/, '')}`);
+   const staff = t.assignedStaff ? ` → ${t.assignedStaff.name}` : '';
+   lines.push(`${icon} *${t.id}* — ${cat}${staff}`);
   }
   lines.push(DIVIDER);
   return lines.join('\n');
  }
 
- /**
-  * Format stats summary.
-  */
  formatStats() {
   const stats = this.repo.getStats();
   const lines = [
@@ -239,8 +313,10 @@ export class TicketService {
    '',
    DIVIDER,
    `Total: ${stats.total}`,
-   `Open: ${stats.open}`,
-   `Closed: ${stats.closed}`,
+   `🟢 Open: ${stats.open}`,
+   `🔵 Claimed: ${stats.claimed}`,
+   `🟡 Resolved: ${stats.resolved}`,
+   `🔴 Closed: ${stats.closed}`,
   ];
   if (Object.keys(stats.byCategory).length) {
    lines.push('');

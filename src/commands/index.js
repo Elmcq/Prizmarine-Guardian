@@ -33,6 +33,8 @@ import ticket from './ticket.js';
 import myticket from './myticket.js';
 import tickets from './tickets.js';
 import close from './close.js';
+import claim from './claim.js';
+import resolve from './resolve.js';
 import addstaff from './addstaff.js';
 import removestaff from './removestaff.js';
 
@@ -72,6 +74,8 @@ const modules = [
  myticket,
  tickets,
  close,
+ claim,
+ resolve,
  addstaff,
  removestaff,
 ];
