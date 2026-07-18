@@ -82,6 +82,7 @@ export class ToxicityService {
    score: result.score,
    decision: result.decision,
    tier: result.tier,
+   intent: result.intent,
    context: result.context,
    target: result.target,
    negation: result.negation,

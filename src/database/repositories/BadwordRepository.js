@@ -111,13 +111,23 @@ export class BadwordRepository {
     : [];
   }
 
-  // Merge better-profane-words into appropriate tiers
-  const existingWords = new Set();
+  // Validate no duplicates across tiers
+  const wordLocations = new Map();
   for (const tier of TIER_KEYS) {
    for (const word of tiers[tier]) {
-    existingWords.add(word.toLowerCase());
+    const normalized = word.toLowerCase();
+    if (wordLocations.has(normalized)) {
+     const prevTier = wordLocations.get(normalized);
+     throw new Error(
+      `Duplicate badword detected:\n\nWord: "${word}"\n\nFound in:\n- ${prevTier}\n- ${tier}\n\nEvery word must belong to exactly one tier.`
+     );
+    }
+    wordLocations.set(normalized, tier);
    }
   }
+
+  // Merge better-profane-words into appropriate tiers
+  const existingWords = new Set(wordLocations.keys());
 
   const profaneWords = betterProfane.getAll();
   for (const entry of profaneWords) {

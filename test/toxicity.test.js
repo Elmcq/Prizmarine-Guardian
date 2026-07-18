@@ -29,7 +29,7 @@ const repository = {
    educational: ['belajar'],
    literal: ['hewan', 'binatang', 'peliharaan', 'lucu', 'foto', 'jenis', 'ras', 'mamalia', 'suka'],
   },
-  targetPronouns: ['kamu', 'lu', 'dia', 'kau'],
+  targetPronouns: ['kamu', 'lu', 'dia', 'kau', 'dasar'],
  }),
 };
 const service = new ToxicityService(repository);
@@ -237,4 +237,62 @@ test('loads empty tiers gracefully', () => {
  const settings = repo.getSettings();
  assert.equal(settings.keywords >= 0, true);
  assert.equal(settings.tiers.normal, 0);
+});
+
+// === Intent Classification Regression Tests ===
+
+test('GENERAL_EXPRESSION: god damn, again problem', () => {
+ const result = service.detect('god damn, again problem');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.intent, 'GENERAL_EXPRESSION');
+});
+
+test('GENERAL_EXPRESSION: damn, the server crashed', () => {
+ const result = service.detect('damn, the server crashed');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.intent, 'GENERAL_EXPRESSION');
+});
+
+test('GENERAL_EXPRESSION: what the hell', () => {
+ const result = service.detect('what the hell');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.intent, 'GENERAL_EXPRESSION');
+});
+
+test('PERSONAL_ATTACK: directed at someone — lu anjing', () => {
+ const result = service.detect('lu anjing');
+ assert.equal(result.isToxic, true);
+ assert.equal(result.intent, 'PERSONAL_ATTACK');
+ assert.equal(result.target, true);
+});
+
+test('PERSONAL_ATTACK: you are a damn idiot', () => {
+ const result = service.detect('lu goblok');
+ assert.equal(result.isToxic, true);
+ assert.equal(result.intent, 'PERSONAL_ATTACK');
+ assert.equal(result.target, true);
+});
+
+test('GENERAL_EXPRESSION: omg problem again', () => {
+ const result = service.detect('omg problem again');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.intent, 'GENERAL_EXPRESSION');
+});
+
+test('SELF_REFERENCE: i am an idiot', () => {
+ const result = service.detect('aku idiot');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.intent, 'SELF_REFERENCE');
+});
+
+test('EDUCATIONAL: kata goblok termasuk kata kasar', () => {
+ const result = service.detect('kata goblok termasuk kata kasar');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.intent, 'EDUCATIONAL');
+});
+
+test('QUOTATION: dia bilang "goblok" tadi', () => {
+ const result = service.detect('dia bilang "goblok" tadi');
+ assert.equal(result.isToxic, false);
+ assert.equal(result.intent, 'QUOTATION');
 });
