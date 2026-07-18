@@ -158,21 +158,33 @@ export class TicketService {
    this.logger.info('Ticket closed', { ticketId: id, closedBy });
    if (ticket.chatId && this.client) {
     try {
-     await this.client.pupPage.evaluate(async (chatId) => {
-      const chat = await window.WWebJS.getChat(chatId, { getAsModel: false });
-      const me = window.Store.User.getMaybeMeUser();
-      if (chat.participants) {
-       for (const p of chat.participants) {
-        if (p.id && p.id._serialized !== me._serialized) {
-         try { await window.require('WAWebGroupParticipantRemoveJob').sendGroupParticipantRemove(chat, p.id); } catch {}
-        }
+     const meId = this.client.info.wid._serialized;
+     await this.client.pupPage.evaluate(
+      async (chatId, meId) => {
+       const chat = await window.WWebJS.getChat(chatId, { getAsModel: false });
+       if (!chat) throw new Error('Chat not found');
+       if (!chat.groupMetadata) throw new Error('Not a group');
+
+       const meIds = new Set([meId]);
+       try {
+        const identity = await window.WWebJS.enforceLidAndPnRetrieval(meId);
+        if (identity?.lid?._serialized) meIds.add(identity.lid._serialized);
+        if (identity?.phone?._serialized) meIds.add(identity.phone._serialized);
+       } catch {}
+
+       const participants = chat.groupMetadata.participants.getModelsArray().filter(p => !meIds.has(p.id._serialized));
+       if (participants.length > 0) {
+        await window.require('WAWebModifyParticipantsGroupAction').removeParticipants(chat, participants);
        }
-      }
-      return window.require('WAWebExitGroupAction').sendExitGroup(chat);
-     }, ticket.chatId);
+
+       return window.require('WAWebExitGroupAction').sendExitGroup(chat);
+      },
+      ticket.chatId,
+      meId
+     );
      this.logger.info('Left ticket group', { ticketId: id, chatId: ticket.chatId });
     } catch (err) {
-     console.error('[TICKET-LEAVE-ERROR]', err.message, err.stack);
+     console.error('[TICKET-LEAVE-ERROR]', err.message);
      this.logger.error('Failed to leave ticket group', { ticketId: id, chatId: ticket.chatId, error: err.message });
     }
    }

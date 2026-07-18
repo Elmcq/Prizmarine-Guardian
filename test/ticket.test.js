@@ -175,10 +175,10 @@ describe('TicketService', () => {
 
  it('close leaves WhatsApp group when chatId exists', async () => {
   let leftChatId = null;
-  let removedParticipants = [];
   const client = {
+   info: { wid: { _serialized: 'bot@c.us' } },
    pupPage: {
-    evaluate: async (fn, chatId) => { leftChatId = chatId; },
+    evaluate: async (fn, chatId, meId) => { leftChatId = chatId; },
    },
   };
   service = new TicketService({ repo, logger: mockLogger(), client });
@@ -190,6 +190,7 @@ describe('TicketService', () => {
 
  it('close handles leave error gracefully', async () => {
   const client = {
+   info: { wid: { _serialized: 'bot@c.us' } },
    pupPage: {
     evaluate: async () => { throw new Error('Chat not found'); },
    },
