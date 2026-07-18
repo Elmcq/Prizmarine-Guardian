@@ -19,8 +19,9 @@ export default {
         return ctx.message.reply(errorText('Kota tidak ditemukan.', 'Coba dengan nama kota yang lebih umum.'));
       }
       const city = locations[0];
-      await ctx.repos.islamic.setCity(ctx.groupId, city.id, city.name);
-      await ctx.message.reply(successText('Kota Diatur', 'Completed', `Kota: ${city.name}\nGunakan !sholat untuk melihat jadwal.`));
+      const cityName = city.lokasi || city.name || query;
+      await ctx.repos.islamic.setCity(ctx.groupId, city.id, cityName);
+      await ctx.message.reply(successText('Kota Diatur', 'Completed', `Kota: ${cityName}\nGunakan !sholat untuk melihat jadwal.`));
       return;
     }
 
