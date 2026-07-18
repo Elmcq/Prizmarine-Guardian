@@ -67,17 +67,25 @@ export class TicketService {
    const groupName = `PRIZMARINE TICKET ${ticket.id}`;
 
     const participants = [];
-    const creatorPhone = this.contactResolver?.getPhone?.(ticket.userId);
-    if (creatorPhone) {
-     const phone = creatorPhone.replace(/[^0-9]/g, '');
-     if (phone) participants.push(`${phone}@c.us`);
+    if (ticket.userId.endsWith('@lid') && this.client) {
+     try {
+      const [mapping] = await this.client.getContactLidAndPhone([ticket.userId]);
+      if (mapping?.pn) {
+       participants.push(mapping.pn);
+      }
+     } catch {}
+    } else if (ticket.userId.endsWith('@c.us')) {
+     participants.push(ticket.userId);
     }
     if (this.staffRepo) {
      const staffList = this.staffRepo.findAll();
      for (const s of staffList) {
       const staffPhone = s.phone.replace(/[^0-9]/g, '');
-      if (staffPhone && !participants.includes(`${staffPhone}@c.us`)) {
-       participants.push(`${staffPhone}@c.us`);
+      if (staffPhone) {
+       const staffWid = `${staffPhone}@c.us`;
+       if (!participants.includes(staffWid)) {
+        participants.push(staffWid);
+       }
       }
      }
     }
@@ -92,6 +100,20 @@ export class TicketService {
    await this.repo.setChatId(ticket.id, chatId);
 
    await this.sendWelcomeMessage(chatId, ticket);
+
+   if (ticket.userId.endsWith('@lid') && !participants.some(p => p !== ticket.userId)) {
+    try {
+     const groupChat = await this.client.getChatById(chatId);
+     if (groupChat?.getInviteCode) {
+      const inviteCode = await groupChat.getInviteCode();
+      const inviteUrl = `https://chat.whatsapp.com/${inviteCode}`;
+      await this.client.sendMessage(ticket.userId, `🎫 *Ticket ${ticket.id} — Support Group*\n\nYou were invited to a support group.\nJoin here: ${inviteUrl}`);
+      this.logger.info('Sent group invite to LID user', { ticketId: ticket.id, userId: ticket.userId });
+     }
+    } catch (err) {
+     this.logger.error('Failed to send group invite', { ticketId: ticket.id, error: err.message });
+    }
+   }
 
    this.logger.info('Ticket group created', { ticketId: ticket.id, chatId, participants: participants.length });
    return { chatId, error: null };
