@@ -103,38 +103,34 @@ export class AnalyticsService {
     const cutoff = RANGE_MS[range] != null ? Date.now() - RANGE_MS[range] : null;
     const triggers = {};
 
-    const rules = this.repos.rules.getRules();
-    for (const [id, rule] of Object.entries(rules)) {
-      triggers[id] = { id, title: rule.title, count: 0, punishment: rule.punishment };
-    }
+    const moduleLabels = {
+      toxicity: 'Toxic Language',
+      nsfw: 'NSFW Content',
+      advertisement: 'Advertising / Promotion',
+      raid: 'Raid / Mass Pinging',
+      sticker: 'Sticker Spam',
+    };
 
-    const warnings = this.repos.warnings.all();
-    for (const w of warnings) {
-      for (const r of (w.reasons || [])) {
-        if (cutoff && (r.at || 0) < cutoff) continue;
-        const ruleMatch = this._matchRule(r.reason, rules);
-        if (ruleMatch && triggers[ruleMatch]) {
-          triggers[ruleMatch].count++;
-        }
-      }
+    for (const [key, label] of Object.entries(moduleLabels)) {
+      triggers[key] = { id: key, title: label, count: 0, punishment: 'Auto', module: key };
     }
 
     for (const key of MODULE_KEYS) {
       const incidents = this.repos[key].getIncidents() || [];
       for (const inc of incidents) {
         if (cutoff && (inc.timestamp || 0) < cutoff) continue;
-        const cat = inc.category || inc.type || key;
-        const existing = Object.values(triggers).find(
-          (t) => t.title.toLowerCase() === cat.toLowerCase(),
-        );
-        if (existing) {
-          existing.count++;
-        } else {
-          const syntheticId = `auto_${key}_${cat}`;
-          if (!triggers[syntheticId]) {
-            triggers[syntheticId] = { id: syntheticId, title: cat, count: 0, punishment: 'Auto' };
-          }
-          triggers[syntheticId].count++;
+        if (triggers[key]) triggers[key].count++;
+      }
+    }
+
+    const warnings = this.repos.warnings.all();
+    for (const w of warnings) {
+      for (const r of (w.reasons || [])) {
+        if (cutoff && (r.at || 0) < cutoff) continue;
+        const cat = this._categorize(r.reason);
+        const key = this._categoryToModule(cat);
+        if (key && triggers[key]) {
+          triggers[key].count++;
         }
       }
     }
@@ -143,29 +139,6 @@ export class AnalyticsService {
       .filter((t) => t.count > 0)
       .sort((a, b) => b.count - a.count)
       .slice(0, limit);
-  }
-
-  _matchRule(reason, rules) {
-    if (!reason) return null;
-    const lower = reason.toLowerCase();
-    for (const [id, rule] of Object.entries(rules)) {
-      if (lower.includes(rule.title.toLowerCase()) || lower.includes(id.toLowerCase())) {
-        return id;
-      }
-    }
-    if (lower.includes('toxic')) return this._findRuleByTitle(rules, 'Toxic');
-    if (lower.includes('spam')) return this._findRuleByTitle(rules, 'Spam');
-    if (lower.includes('nsfw') || lower.includes('adult')) return this._findRuleByTitle(rules, 'NSFW');
-    if (lower.includes('ad') || lower.includes('promo')) return this._findRuleByTitle(rules, 'Advertisement');
-    return null;
-  }
-
-  _findRuleByTitle(rules, keyword) {
-    const lower = keyword.toLowerCase();
-    for (const [id, rule] of Object.entries(rules)) {
-      if (rule.title.toLowerCase().includes(lower)) return id;
-    }
-    return null;
   }
 
   getUserProfile(userId) {
@@ -246,6 +219,18 @@ export class AnalyticsService {
     score -= Math.min(totalBans * 15, 30);
     score -= Math.min((currentWarnings / Math.max(warnLimit, 1)) * 20, 20);
     return Math.max(0, Math.min(100, Math.round(score)));
+  }
+
+  _categoryToModule(category) {
+    const map = {
+      Toxicity: 'toxicity',
+      NSFW: 'nsfw',
+      Advertisement: 'advertisement',
+      Spam: 'toxicity',
+      Raid: 'raid',
+      'Sticker Spam': 'sticker',
+    };
+    return map[category] || null;
   }
 
   _categorize(reason) {
