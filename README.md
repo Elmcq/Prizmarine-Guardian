@@ -57,6 +57,17 @@ repeat offenders — while also defending groups against spam and message floodi
 - **`!addstaff` / `!removestaff`** — owner manages staff roster (persisted in `data/staff.json`).
 - Staff can use `!claim`, `!resolve`, `!tickets`.
 
+### Islamic Module (v1.3.0)
+
+- **`!sholat [kota]`** — jadwal sholat harian (50+ kota Indonesia, perhitungan astronomi lokal).
+- **`!hijri`** — tanggal Hijriyah hari ini (algoritma Tabular Islamic Calendar).
+- **`!qibla [kota]`** — arah kiblat dari lokasi grup.
+- **`!prayermode on/off`** — mode sholat (blokir semua command kecuali Islamic).
+- **`!islamic autolock on/off`** — auto-lock group sebelum Maghrib, auto-unblock setelahnya.
+- **`!islamic reminder on/off`** — pengingat sholat otomatis (adzan + iqomah).
+- Perhitungan waktu sholat **100% lokal** — tidak perlu API eksternal.
+- Semua nama sholat menggunakan istilah Indonesia: Subuh, Dzuhur, Ashar, Maghrib, Isya.
+
 ### Web Dashboard
 
 - **Owner-authenticated Express dashboard** — live stats, module toggle, rule CRUD, incident logs.

@@ -1,5 +1,52 @@
 # Changelog
 
+## v1.3.0
+
+**Islamic Module — Prayer Times, Hijri Calendar, Qibla, Auto-Lock**
+
+Status: Feature Release
+
+### Added
+- `!sholat [kota]` — jadwal sholat harian (50+ kota Indonesia, perhitungan astronomi lokal)
+- `!hijri` — tanggal Hijriyah (algoritma Tabular Islamic Calendar / Kuwaiti)
+- `!qibla [kota]` — arah kiblat dari lokasi grup (perhitungan bearing lokal)
+- `!prayermode on/off [menit]` — mode sholat (blokir semua command kecuali Islamic)
+- `!islamic reminder on/off` — pengingat sholat otomatis (adzan + iqomah)
+- `!islamic autolock on/off` — auto-lock group sebelum Maghrib, auto-unblock setelahnya
+- `!islamic lockbefore <menit>` — atur waktu lock sebelum Maghrib (default: 5 menit)
+- `!islamic lockafter <menit>` — atur waktu unlock setelah Maghrib (default: 15 menit)
+- `!islamic timezone <angka>` — atur timezone (default: UTC+7)
+- `PrayerService` — perhitungan waktu sholat lokal (KEMENAG method), tidak perlu API eksternal
+- `HijriService` — konversi Gregorian → Hijriyah (algoritma Tabular)
+- `QiblaService` — perhitungan bearing arah kiblat dari koordinat
+- `ReminderService` — cron scheduler untuk pengingat adzan + iqomah + auto-lock/unlock
+- `PrayerModeService` — sesi temporary blokir command selama sholat
+- `IslamicRepository` — persistence layer (data/islamic.json)
+- `Indonesian Cities Database` — 50+ kota dengan koordinat (Surabaya, Jakarta, Malang, dll)
+
+### Changed
+- `src/config/constants.js` — added `islamic` to DB_FILES and DEFAULTS, `PRAYER_REMINDER` event
+- `src/config/islamic.config.js` — prayer names mapping (Subuh, Dzuhur, Ashar, dll)
+- `src/database/DatabaseService.js` — added islamic getter and initialization
+- `src/handlers/messageHandler.js` — prayer mode blocks non-Islamic commands
+- `src/index.js` — wired IslamicService, IslamicRepository, scheduler integration
+- `src/commands/index.js` — registered sholat, hijri, qibla, prayermode, islamic commands
+- All Islamic command help text uses Indonesian names (Subuh, Dzuhur, Ashar, Isya)
+
+### Fixed
+- Prayer times: Asr calculation (was using timezone fraction instead of latitude)
+- Prayer times: formatTime (was multiplying by 15, producing 68:31 instead of 04:31)
+- Prayer times: next prayer calculation (was comparing UTC server time against WIB times)
+- Hijri date: year calculation (was showing -70967, now correct via Kuwaiti algorithm)
+- Prayer names: display now uses Indonesian terms (Subuh, Dzuhur, Ashar, Isya)
+
+### Architecture
+- Local astronomical calculation — no external API dependency (MyQuran/Aladhan unreachable from server)
+- All calculations use Asia/Jakarta (UTC+7) consistently
+- `data/islamic.json` — auto-created, stores per-group settings and prayer cache
+
+---
+
 ## v1.2.2
 
 **Ticket Staff Permission Fix**

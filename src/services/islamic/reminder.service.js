@@ -51,7 +51,7 @@ export class ReminderService {
 
   async _checkReminders(groupId, settings, times, currentMinutes) {
     const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
-    const names = ISLAMIC_CONFIG.prayerNamesID;
+    const names = ISLAMIC_CONFIG.prayerNames;
 
     for (const prayer of prayers) {
       const timeStr = times[prayer];

@@ -71,7 +71,7 @@ export class PrayerService {
 
   formatPrayerTimes(times) {
     if (!times) return null;
-    const names = ISLAMIC_CONFIG.prayerNamesID;
+    const names = ISLAMIC_CONFIG.prayerNames;
     return {
       Fajr: `${names.Fajr}: ${times.Fajr}`,
       Dhuhr: `${names.Dhuhr}: ${times.Dhuhr}`,
