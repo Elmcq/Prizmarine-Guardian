@@ -2,6 +2,15 @@ import { calculatePrayerTimes } from '../../utils/prayerCalculator.js';
 import { findCity, INDONESIAN_CITIES } from '../../utils/cities.js';
 import { ISLAMIC_CONFIG } from '../../config/islamic.config.js';
 
+const PRAYER_NAMES_ID = {
+  Fajr: 'Subuh',
+  Sunrise: 'Terbit',
+  Dhuhr: 'Dzuhur',
+  Asr: 'Ashar',
+  Maghrib: 'Maghrib',
+  Isha: 'Isya',
+};
+
 export class PrayerService {
   constructor({ repo, logger }) {
     this.repo = repo;
@@ -50,14 +59,14 @@ export class PrayerService {
       const prayerDate = new Date(nowWIB);
       prayerDate.setHours(h, m, 0, 0);
       if (prayerDate > nowWIB) {
-        return { name, time: timeStr, date: prayerDate };
+        return { name, displayName: PRAYER_NAMES_ID[name] || name, time: timeStr, date: prayerDate };
       }
     }
     const [fh, fm] = times.Fajr.split(':').map(Number);
     const tomorrow = new Date(nowWIB);
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(fh, fm, 0, 0);
-    return { name: 'Fajr', time: times.Fajr, date: tomorrow };
+    return { name: 'Fajr', displayName: 'Subuh', time: times.Fajr, date: tomorrow };
   }
 
   formatPrayerTimes(times) {

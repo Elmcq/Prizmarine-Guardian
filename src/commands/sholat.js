@@ -50,7 +50,7 @@ export default {
 
     const next = islamic.prayer.getNextPrayer(times);
     if (next) {
-      lines.push('', `⏰ *Sholat berikutnya:* ${next.name} (${next.time})`);
+      lines.push('', `⏰ *Sholat berikutnya:* ${next.displayName} (${next.time})`);
     }
 
     await ctx.message.reply(panelText('Prayer Times', lines.filter(Boolean), '🕌'));
