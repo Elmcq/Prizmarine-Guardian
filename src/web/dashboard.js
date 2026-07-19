@@ -7,11 +7,13 @@ import { modulesRouter } from './routes/modules.js';
 import { rulesRouter } from './routes/rules.js';
 import { dataRouter } from './routes/data.js';
 import { settingsRouter } from './routes/settings.js';
+import { analyticsRouter } from './routes/analytics.js';
+import { exportRouter } from './routes/export.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.resolve(__dirname, '..', '..', 'public');
 
-export function createDashboard({ repos, services, config, logger, eventBus, contactResolver }) {
+export function createDashboard({ repos, services, config, logger, eventBus, contactResolver, analyticsService, exportService }) {
  const app = express();
  app.use(express.json({ limit: '64kb' }));
  const auth = createAuth(config.dashboardToken);
@@ -24,6 +26,8 @@ export function createDashboard({ repos, services, config, logger, eventBus, con
  app.use('/api/rules', rulesRouter({ services }));
  app.use('/api/settings', settingsRouter({ repos, config, eventBus }));
  app.use('/api/data', dataRouter({ repos, contactResolver }));
+ app.use('/api/analytics', analyticsRouter({ analyticsService }));
+ app.use('/api/export', exportRouter({ exportService }));
  app.use(express.static(PUBLIC_DIR));
  app.get(/^\/(?!api).*/, (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
  app.use((err, req, res, next) => {

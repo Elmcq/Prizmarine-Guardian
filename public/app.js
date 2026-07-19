@@ -116,7 +116,10 @@ async function boot() {
   }
   showApp();
   await Promise.all([loadOverview(), loadModules(), loadRules()]);
+  loadAnalytics();
+  loadViolations();
   loadIncidents();
+  loadAudit();
   loadBans();
   loadWarnings();
 }
@@ -308,33 +311,166 @@ async function deleteRule(id) {
   }
 }
 
+/* ---------------- Analytics ---------------- */
+$('#analytics-range').addEventListener('change', loadAnalytics);
+
+async function loadAnalytics() {
+  const range = $('#analytics-range').value;
+  const d = await api(`/api/analytics?range=${range}`);
+  const cards = [
+    { label: 'Messages Scanned', value: d.messagesSeen },
+    { label: 'Blocked Messages', value: d.blockedMessages },
+    { label: 'Toxic Detections', value: d.toxicDetections },
+    { label: 'NSFW Detections', value: d.nsfwDetections },
+    { label: 'Advertisement', value: d.adDetections },
+    { label: 'Raid Detections', value: d.raidDetections },
+    { label: 'Spam Detections', value: d.spamDetections },
+    { label: 'Total Warnings', value: d.totalWarnings },
+    { label: 'Active Bans', value: d.activeBans },
+  ];
+
+  const container = $('#analytics-cards');
+  container.innerHTML = cards.map((c) => `
+    <div class="card">
+      <div class="stat" data-decrypt></div>
+      <div class="stat-label">${escapeHtml(c.label)}</div>
+    </div>`).join('');
+  container.querySelectorAll('.card').forEach((card, i) => {
+    decryptText(card.querySelector('[data-decrypt]'), String(cards[i].value), {
+      speed: 25,
+      stagger: 50 + i * 15,
+    });
+  });
+}
+
+/* ---------------- Top Violations ---------------- */
+async function loadViolations() {
+  const range = $('#analytics-range') ? $('#analytics-range').value : 'all';
+  const d = await api(`/api/analytics/violations?range=${range}&limit=10`);
+  if (!d.length) {
+    $('#violations-table').innerHTML = '<div class="table-wrap"><p class="muted" style="padding:12px">No violations recorded.</p></div>';
+    return;
+  }
+  $('#violations-table').innerHTML = `
+    <table>
+      <thead><tr><th>#</th><th>Rule</th><th>Triggers</th><th>Punishment</th></tr></thead>
+      <tbody>
+        ${d.map((v, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${escapeHtml(v.title)}</td>
+            <td>${escapeHtml(String(v.count))}</td>
+            <td>${escapeHtml(v.punishment)}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+/* ---------------- Audit Log ---------------- */
+$('#refresh-audit').addEventListener('click', loadAudit);
+
+async function loadAudit() {
+  const d = await api('/api/data/audit?limit=50');
+  if (!d.items.length) {
+    $('#audit-table').innerHTML = '<div class="table-wrap"><p class="muted" style="padding:12px">No audit records.</p></div>';
+    return;
+  }
+  $('#audit-table').innerHTML = `
+    <table>
+      <thead><tr><th>Time</th><th>Action</th><th>User</th><th>Moderator</th><th>Reason</th></tr></thead>
+      <tbody>
+        ${d.items.map((a) => `
+          <tr>
+            <td>${fmtTime(a.timestamp)}</td>
+            <td>${escapeHtml(a.action)}</td>
+            <td>${escapeHtml(shortId(a.user))}</td>
+            <td>${escapeHtml(shortId(a.moderator))}</td>
+            <td>${escapeHtml(a.reason || '-')}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+/* ---------------- User Profile ---------------- */
+$('#user-profile-close').addEventListener('click', () => $('#user-modal').classList.add('hidden'));
+
+async function showUserProfile(userId) {
+  try {
+    const profile = await api(`/api/analytics/user/${encodeURIComponent(userId)}`);
+    const trustColor = profile.trustScore >= 80 ? 'var(--green)' : profile.trustScore >= 50 ? 'var(--primary)' : 'var(--error)';
+    const trustLabel = profile.trustScore >= 80 ? 'Good' : profile.trustScore >= 50 ? 'Moderate' : 'At Risk';
+    const violations = Object.entries(profile.violationsByCategory || {})
+      .sort((a, b) => b[1] - a[1])
+      .map(([cat, count]) => `<div class="field"><label>${escapeHtml(cat)}</label><span>${count}</span></div>`)
+      .join('');
+
+    $('#user-profile-content').innerHTML = `
+      <div class="user-profile-grid">
+        <div class="field"><label>User</label><span>${escapeHtml(shortId(profile.userId))}</span></div>
+        <div class="field"><label>Warnings</label><span>${profile.totalWarnings} / ${profile.warnLimit}</span></div>
+        <div class="field"><label>Total Violations</label><span>${profile.totalViolations}</span></div>
+        <div class="field"><label>Total Bans</label><span>${profile.totalBans}</span></div>
+        <div class="field"><label>Most Common</label><span>${escapeHtml(profile.mostCommonViolation)}</span></div>
+        <div class="field"><label>Last Action</label><span>${escapeHtml(profile.lastAction)}</span></div>
+        <div class="field"><label>Trust Score</label>
+          <span style="color:${trustColor};font-weight:600">${profile.trustScore}% — ${trustLabel}</span>
+        </div>
+      </div>
+      ${violations ? `<h3 style="margin:var(--sp-sm) 0 var(--sp-xs)">Violations by Category</h3>${violations}` : ''}
+    `;
+    $('#user-modal').classList.remove('hidden');
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+/* ---------------- Export ---------------- */
+$('#export-btn').addEventListener('click', () => $('#export-modal').classList.remove('hidden'));
+$('#export-cancel').addEventListener('click', () => $('#export-modal').classList.add('hidden'));
+$('#export-download').addEventListener('click', () => {
+  const range = $('#export-range').value;
+  const format = $('#export-format').value;
+  window.open(`/api/export?range=${range}&format=${format}`, '_blank');
+  $('#export-modal').classList.add('hidden');
+  toast('Export started');
+});
+
 /* ---------------- Incidents / Bans / Warnings ---------------- */
 $('#refresh-incidents').addEventListener('click', loadIncidents);
 $('#refresh-bans').addEventListener('click', loadBans);
 $('#refresh-warnings').addEventListener('click', loadWarnings);
+$('#incident-module').addEventListener('change', loadIncidents);
+$('#incident-range').addEventListener('change', loadIncidents);
 
 async function loadIncidents() {
   const mod = $('#incident-module').value;
-  const d = await api(`/api/data/incidents?module=${mod}&limit=50`);
-  if (!d.items.length) {
+  const range = $('#incident-range').value;
+  const d = await api(`/api/analytics/incidents/${mod}?range=${range}&limit=50`);
+  if (!d.length) {
     $('#incidents-table').innerHTML = '<div class="table-wrap"><p class="muted" style="padding:12px">No incidents.</p></div>';
     return;
   }
   $('#incidents-table').innerHTML = `
     <table>
-      <thead><tr><th>Time</th><th>Group</th><th>User</th><th>Category/Type</th><th>Sev</th><th>Action</th></tr></thead>
+      <thead><tr><th>Time</th><th>User</th><th>Category</th><th>Rule</th><th>Action</th><th>Score</th></tr></thead>
       <tbody>
-        ${d.items.map((i) => `
-          <tr>
+        ${d.map((i) => `
+          <tr class="incident-row" data-user="${escapeHtml(i.user || '')}" style="cursor:pointer">
             <td>${fmtTime(i.timestamp)}</td>
-            <td>${escapeHtml(shortId(i.group))}</td>
             <td>${escapeHtml(shortId(i.user))}</td>
             <td>${escapeHtml(i.category || i.type || '-')}</td>
-            <td>${escapeHtml(i.severity || '-')}</td>
-            <td>${escapeHtml(i.action || '-')}</td>
+            <td>${escapeHtml(i.rule ? i.rule.title : '-')}</td>
+            <td>${escapeHtml(i.actionLabel || i.action || '-')}</td>
+            <td>${escapeHtml(String(i.score ?? '-'))}</td>
           </tr>`).join('')}
       </tbody>
     </table>`;
+  $('#incidents-table').querySelectorAll('.incident-row').forEach((row) => {
+    row.addEventListener('click', () => {
+      const userId = row.dataset.user;
+      if (userId && userId !== '-') showUserProfile(userId);
+    });
+  });
 }
 
 async function loadBans() {
@@ -397,11 +533,12 @@ function fmtTime(ts) {
   return Number.isNaN(d.getTime()) ? String(ts) : d.toLocaleString();
 }
 
-// Auto-refresh overview + modules
+// Auto-refresh overview + modules + analytics
 setInterval(() => {
   if (!$('#app').classList.contains('hidden')) {
     loadOverview().catch(() => {});
     loadModules().catch(() => {});
+    loadAnalytics().catch(() => {});
   }
 }, 20000);
 

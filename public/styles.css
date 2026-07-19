@@ -705,6 +705,32 @@ td button {
  margin-top: var(--sp-xs);
 }
 
+.user-profile-modal {
+ width: min(480px, 100%);
+}
+
+.user-profile-grid {
+ display: grid;
+ gap: var(--sp-xs);
+}
+
+.user-profile-grid .field {
+ justify-content: space-between;
+ padding: var(--sp-xs) 0;
+ border-bottom: 1px solid var(--border-subtle);
+}
+
+.user-profile-grid .field label {
+ color: var(--tertiary);
+ font-family: var(--font-mono);
+ font-size: 12px;
+}
+
+.user-profile-grid .field span {
+ color: var(--on-surface);
+ font-size: 14px;
+}
+
 .toast {
  position: fixed;
  bottom: max(24px, env(safe-area-inset-bottom));

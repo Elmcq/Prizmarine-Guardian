@@ -37,6 +37,8 @@ import { AuditService } from './services/AuditService.js';
 import { TicketService } from './services/TicketService.js';
 import { StaffService } from './services/StaffService.js';
 import { IslamicService } from './services/islamic/islamic.service.js';
+import { AnalyticsService } from './services/AnalyticsService.js';
+import { ExportService } from './services/ExportService.js';
 import { FitnessReminderRepository, FitnessReminderScheduler } from './modules/sport-fitness/index.js';
 import { ContactResolver } from './services/ContactResolver.js';
 import { registerMessageHandler } from './handlers/messageHandler.js';
@@ -90,7 +92,9 @@ async function bootstrap() {
   const staffService = new StaffService({ repo: repos.staff, logger });
    const islamicService = new IslamicService({ repo: repos.islamic, client: null, logger, eventBus });
    const fitnessScheduler = new FitnessReminderScheduler({ repo: repos.fitness, client: null, logger });
- const backup = new BackupService(db, { keep: 14 });
+  const backup = new BackupService(db, { keep: 14 });
+  const analyticsService = new AnalyticsService({ repos, eventBus });
+  const exportService = new ExportService({ repos, analyticsService });
 
  const client = new Client({
  authStrategy: new LocalAuth({ dataPath: '.wwebjs_auth' }),
@@ -129,7 +133,7 @@ async function bootstrap() {
  let dashboardServer = null;
  if (config.dashboardToken) {
  try {
- const app = createDashboard({ repos, services, config, logger, eventBus, contactResolver });
+ const app = createDashboard({ repos, services, config, logger, eventBus, contactResolver, analyticsService, exportService });
  dashboardServer = app.listen(config.dashboardPort, config.dashboardHost, () => logger.info(`Dashboard listening on http://${config.dashboardHost}:${config.dashboardPort}`));
  } catch (err) {
  logger.error('Failed to start dashboard', { error: err.message });

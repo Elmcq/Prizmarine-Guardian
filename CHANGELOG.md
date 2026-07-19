@@ -1,5 +1,43 @@
 # Changelog
 
+## v1.5.0
+
+**Dashboard Intelligence & Analytics — Moderation Analytics, User Profiles, Export**
+
+Status: Feature Release
+
+### Added
+- **Moderation Analytics** — aggregated stats across all modules (messages scanned, blocked, toxic/NSFW/ad/raid/spam detections, warnings, bans)
+- **Time Range Filter** — Today, Last 7 Days, Last 30 Days, All Time
+- **Top Violations Leaderboard** — most triggered rules with trigger counts
+- **User Moderation Profile** — click any user in incidents to see warnings, violations, trust score, most common violation, last action
+- **Trust Score** — calculated from violations, bans, and current warnings (0-100%)
+- **Enhanced Incidents** — shows rule mapping, action labels, score, clickable user links
+- **Audit Log Section** — dedicated dashboard section for admin activity tracking
+- **Export Reports** — download JSON or CSV with overview, violations, incidents, warnings, bans, audit log
+- **Analytics Cache** — 30-second in-memory cache with event-driven invalidation
+- `GET /api/analytics` — overview with time range
+- `GET /api/analytics/violations` — top violations
+- `GET /api/analytics/user/:userId` — user moderation profile
+- `GET /api/analytics/incidents/:module` — enhanced incidents
+- `GET /api/export?range=&format=` — JSON/CSV export
+- `AnalyticsService` — aggregation, caching, trust score calculation
+- `ExportService` — JSON and CSV report generation
+- 13 new tests (133 total, all passing)
+
+### Changed
+- `src/web/dashboard.js` — wired analytics and export routers
+- `src/index.js` — created AnalyticsService and ExportService instances
+- `public/index.html` — added Analytics, Top Violations, Audit Log sections; user profile modal; export modal; Toxicity added to incident module filter
+- `public/app.js` — analytics loading, violations loading, audit log loading, user profile modal, export modal, enhanced incidents with clickable users
+- `public/styles.css` — user profile modal styles
+
+### Fixed
+- Incident module filter now includes Toxicity (was missing)
+- Analytics invalidation on moderation events (warning, ban, kick, toxicity, settings change)
+
+---
+
 ## v1.4.0
 
 **Sport & Fitness Module — Calculators, Workout, Nutrition, Reminders**
