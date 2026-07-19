@@ -25,8 +25,8 @@ export function createDashboard({ repos, services, config, logger, eventBus, con
  app.use('/api/modules', modulesRouter({ repos, services, eventBus }));
  app.use('/api/rules', rulesRouter({ services }));
  app.use('/api/settings', settingsRouter({ repos, config, eventBus }));
- app.use('/api/data', dataRouter({ repos, contactResolver }));
- app.use('/api/analytics', analyticsRouter({ analyticsService }));
+ app.use('/api/data', dataRouter({ repos, contactResolver, logger }));
+ app.use('/api/analytics', analyticsRouter({ analyticsService, logger }));
  app.use('/api/export', exportRouter({ exportService }));
  app.use(express.static(PUBLIC_DIR));
  app.get(/^\/(?!api).*/, (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));

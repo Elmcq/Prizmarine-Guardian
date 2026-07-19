@@ -1,6 +1,6 @@
 import express from 'express';
 
-export function analyticsRouter({ analyticsService }) {
+export function analyticsRouter({ analyticsService, logger }) {
   const router = express.Router();
 
   router.get('/', (req, res) => {
@@ -34,7 +34,14 @@ export function analyticsRouter({ analyticsService }) {
     }
     const range = String(req.query.range || 'all');
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
-    res.json(analyticsService.getEnhancedIncidents(module, range, limit));
+    try {
+      const result = analyticsService.getEnhancedIncidents(module, range, limit);
+      logger?.debug?.('incidents query', { module, range, limit, count: result.length });
+      res.json(result);
+    } catch (err) {
+      logger?.error?.('getEnhancedIncidents failed', { module, range, error: err.message });
+      res.json([]);
+    }
   });
 
   return router;

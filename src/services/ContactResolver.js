@@ -1,4 +1,14 @@
 const CACHE_TTL_MS = 60 * 60 * 1000;
+const RESOLVE_TIMEOUT_MS = 10_000;
+
+function withTimeout(promise, ms, label = 'Operation') {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
 
 export class ContactResolver {
 constructor(client, logger, settings = null) {
@@ -21,14 +31,28 @@ constructor(client, logger, settings = null) {
  if (!this._looksLikeWhatsAppId(id)) return String(id);
  const cached = this.cache.get(id);
  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) return cached.name;
- const profile = await this._fetchProfile(id);
+ const profile = await withTimeout(
+   this._fetchProfile(id),
+   RESOLVE_TIMEOUT_MS,
+   `resolve(${id})`
+ ).catch(() => ({ name: this.formatFallback(id), type: this._isGroup(id) ? 'group' : 'contact' }));
  await this.cacheProfile(id, profile.name, profile.type);
  return profile.name;
  }
 
  async resolveMany(ids) {
  const unique = [...new Set(ids.filter(Boolean))];
- const values = await Promise.all(unique.map((id) => this.resolve(id)));
+ if (unique.length === 0) return new Map();
+ 
+ const values = await withTimeout(
+   Promise.all(unique.map((id) => this.resolve(id).catch(() => this.formatFallback(id)))),
+   RESOLVE_TIMEOUT_MS,
+   'resolveMany'
+ ).catch((err) => {
+   this.logger?.debug?.('resolveMany fallback', { error: err.message });
+   return unique.map((id) => this.formatFallback(id));
+ });
+ 
  return new Map(unique.map((id, index) => [id, values[index]]));
  }
 
