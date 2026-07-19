@@ -1,4 +1,4 @@
-import { panelText } from '../../commands/messages.js';
+import { panelText } from '../../../commands/messages.js';
 import { WorkoutService } from '../services/workout.service.js';
 
 const workoutService = new WorkoutService();

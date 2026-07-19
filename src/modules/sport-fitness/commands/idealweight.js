@@ -1,4 +1,4 @@
-import { panelText, errorText } from '../../commands/messages.js';
+import { panelText, errorText } from '../../../commands/messages.js';
 import { calculateIdealWeight } from '../calculators/idealWeight.js';
 
 export default {

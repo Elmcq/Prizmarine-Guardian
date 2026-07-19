@@ -1,4 +1,4 @@
-import { panelText, errorText } from '../../commands/messages.js';
+import { panelText, errorText } from '../../../commands/messages.js';
 import { calculateBMR, calculateTDEE, getActivityLevels } from '../calculators/bmr.js';
 
 export default {

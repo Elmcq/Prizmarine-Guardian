@@ -1,4 +1,4 @@
-import { panelText, errorText, GROUP_ONLY } from '../../commands/messages.js';
+import { panelText, errorText, GROUP_ONLY } from '../../../commands/messages.js';
 import { calculateBMI } from '../calculators/bmi.js';
 
 export default {

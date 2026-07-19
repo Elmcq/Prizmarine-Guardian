@@ -1,4 +1,4 @@
-import { successText, errorText, panelText, GROUP_ONLY } from '../../commands/messages.js';
+import { successText, errorText, panelText, GROUP_ONLY } from '../../../commands/messages.js';
 
 export default {
   name: 'fitness',

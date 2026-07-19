@@ -1,4 +1,4 @@
-import { panelText, errorText } from '../../commands/messages.js';
+import { panelText, errorText } from '../../../commands/messages.js';
 import { calculateCaloriesBurned } from '../calculators/caloriesBurned.js';
 import { FITNESS_CONSTANTS } from '../constants/fitness.js';
 
