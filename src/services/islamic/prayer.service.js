@@ -37,30 +37,27 @@ export class PrayerService {
     return calculatePrayerTimes(lat, lng, new Date(), 'KEMENAG', tz);
   }
 
-  getNextPrayer(times) {
+  getNextPrayer(times, tz = 7) {
     if (!times) return null;
     const now = new Date();
-    const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+    const nowWIB = new Date(now.getTime() + (now.getTimezoneOffset() + tz * 60) * 60000);
+    const prayers = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
     for (const name of prayers) {
       const timeStr = times[name];
       if (!timeStr) continue;
       const [h, m] = timeStr.split(':').map(Number);
-      const prayerDate = new Date(now);
+      const prayerDate = new Date(nowWIB);
       prayerDate.setHours(h, m, 0, 0);
-      if (prayerDate > now) {
+      if (prayerDate > nowWIB) {
         return { name, time: timeStr, date: prayerDate };
       }
     }
-    return { name: 'Fajr', time: times.Fajr, date: this._tomorrowFajr(times.Fajr) };
-  }
-
-  _tomorrowFajr(fajrTime) {
-    const [h, m] = fajrTime.split(':').map(Number);
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    d.setHours(h, m, 0, 0);
-    return d;
+    const [fh, fm] = times.Fajr.split(':').map(Number);
+    const tomorrow = new Date(nowWIB);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(fh, fm, 0, 0);
+    return { name: 'Fajr', time: times.Fajr, date: tomorrow };
   }
 
   formatPrayerTimes(times) {
