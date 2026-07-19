@@ -1,75 +1,97 @@
 /**
- * Local Hijri (Um Al-Qura) date calculator.
+ * Local Hijri date calculator using the Tabular Islamic Calendar algorithm.
+ * Based on the Kuwaiti algorithm / Tabular Islamic Calendar.
  * No external API needed.
  */
 
 const HIJRI_MONTHS = [
   '', 'Muharram', 'Shafar', 'Rabiul Awal', 'Rabiul Akhir',
-  'Jumadil Awal', 'Jumadil Akhir', 'Rajab', "Syaban",
+  'Jumadil Awal', 'Jumadil Akhir', 'Rajab', 'Syaban',
   'Ramadhan', 'Syawal', 'Dzulqadah', 'Dzulhijjah',
 ];
 
 const HIJRI_MONTHS_AR = [
-  '', 'Muharram', 'Shafar', 'Rabi\u02BBul Awal', 'Rabi\u02BBul Akhir',
+  '', 'Muharram', 'Shafar', 'Rabiul Awal', 'Rabiul Akhir',
   'Jumadil Awal', 'Jumadil Akhir', 'Rajab', "Sha'ban",
   'Ramadan', 'Shawwal', "Dhul Qi'dah", "Dhul Hijjah",
 ];
 
-function gregorianToJulian(year, month, day) {
+/**
+ * Days in each Hijri month (11 = leap year, 12 = normal year).
+ */
+function hijriMonthDays(year, month) {
+  if (month % 2 === 1) return 30;
+  if (month < 12) return 29;
+  return this._isHijriLeapYear(year) ? 30 : 29;
+}
+
+function _isHijriLeapYear(year) {
+  return ((11 * year + 14) % 30) < 11;
+}
+
+/**
+ * Convert Gregorian date to Julian Day Number.
+ */
+function gregorianToJD(year, month, day) {
   if (month <= 2) { year -= 1; month += 12; }
   const A = Math.floor(year / 100);
   const B = 2 - A + Math.floor(A / 4);
   return Math.floor(365.25 * (year + 4716)) + Math.floor(30.6001 * (month + 1)) + day + B - 1524.5;
 }
 
-function julianToGregorian(jd) {
-  const z = Math.floor(jd + 0.5);
-  const f = jd + 0.5 - z;
-  let A;
-  if (z < 2299161) {
-    A = z;
-  } else {
-    const a = Math.floor((z - 1867216.25) / 36524.25);
-    A = z + 1 + a - Math.floor(a / 4);
-  }
-  const B = A + 1524;
-  const C = Math.floor((B - 122.1) / 365.25);
-  const D = Math.floor(365.25 * C);
-  const E = Math.floor((B - D) / 30.6001);
-  const day = B - D - Math.floor(30.6001 * E) + f;
-  const month = E < 14 ? E - 1 : E - 13;
-  const year = month > 2 ? C - 4716 : C - 4715;
-  return { year, month, day: Math.floor(day) };
+/**
+ * Convert Hijri date to Julian Day Number using the Tabular algorithm.
+ * Uses the Kuwaiti algorithm constants.
+ */
+function hijriToJD(year, month, day) {
+  return Math.floor(
+    (11 * year + 3) / 30 +
+    354 * year +
+    30 * month -
+    Math.floor((month - 1) / 2) +
+    day +
+    1948440 - 385
+  );
 }
 
-function yearStart(year) {
-  const jd = Math.floor((11 * year + 3) / 30) + 354 * (year - 1) + 1948440 - 385;
-  return jd;
+/**
+ * Convert Julian Day Number to Hijri date.
+ * Uses the Kuwaiti algorithm (Tabular Islamic Calendar).
+ */
+function jdToHijri(jd) {
+  const l = Math.floor(jd) - 1948440 + 10632;
+  const n = Math.floor((l - 1) / 10631);
+  const l2 = l - 10631 * n + 354;
+  const j = Math.floor((10985 - l2) / 5316) * Math.floor((50 * l2) / 17719) +
+            Math.floor(l2 / 5670) * Math.floor((43 * l2) / 15238);
+  const l3 = l2 - Math.floor((30 - j) / 15) * Math.floor((17719 * j) / 50) -
+             Math.floor(j / 16) * Math.floor((15238 * j) / 43) + 29;
+  const month = Math.floor((24 * l3) / 709);
+  const day = l3 - Math.floor((709 * month) / 24);
+  const year = 30 * n + j - 30;
+
+  return { year, month, day };
 }
 
-function monthStart(hijriYear, hijriMonth) {
-  return Math.ceil(29.5001 * (hijriMonth - 1)) + yearStart(hijriYear);
-}
-
+/**
+ * Convert a JavaScript Date to Hijri date.
+ */
 export function gregorianToHijri(date = new Date()) {
-  const jd = gregorianToJulian(date.getFullYear(), date.getMonth() + 1, date.getDate());
-  const y = Math.floor(((jd - 1948440) + 10632) / 10631);
-  const m = Math.min(12, Math.ceil(((jd - 1948440) + 10631) / 325.3));
-  const d = jd - yearStart(Math.floor(y)) - monthStart(Math.floor(y), Math.ceil(m)) + 1;
-
-  const year = Math.floor(y);
-  const month = Math.ceil(m);
-  const day = Math.floor(d);
+  const jd = gregorianToJD(date.getFullYear(), date.getMonth() + 1, date.getDate());
+  const hijri = jdToHijri(jd);
 
   return {
-    day,
-    month,
-    monthName: HIJRI_MONTHS[month] || '',
-    monthNameAr: HIJRI_MONTHS_AR[month] || '',
-    year,
+    day: hijri.day,
+    month: hijri.month,
+    monthName: HIJRI_MONTHS[hijri.month] || '',
+    monthNameAr: HIJRI_MONTHS_AR[hijri.month] || '',
+    year: hijri.year,
   };
 }
 
+/**
+ * Format Hijri date as a readable string.
+ */
 export function formatHijri(data) {
   if (!data) return null;
   return `${data.day} ${data.monthName} ${data.year} H`;
