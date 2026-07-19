@@ -44,6 +44,17 @@ import hijri from './hijri.js';
 import qibla from './qibla.js';
 import prayermode from './prayermode.js';
 import islamic from './islamic.js';
+import bmi from '../modules/sport-fitness/commands/bmi.js';
+import bmr from '../modules/sport-fitness/commands/bmr.js';
+import tdee from '../modules/sport-fitness/commands/tdee.js';
+import water from '../modules/sport-fitness/commands/water.js';
+import idealweight from '../modules/sport-fitness/commands/idealweight.js';
+import caloriesburn from '../modules/sport-fitness/commands/caloriesburn.js';
+import pace from '../modules/sport-fitness/commands/pace.js';
+import workout from '../modules/sport-fitness/commands/workout.js';
+import exercise from '../modules/sport-fitness/commands/exercise.js';
+import stretch from '../modules/sport-fitness/commands/stretch.js';
+import fitness from '../modules/sport-fitness/commands/fitness.js';
 
 const modules = [
  warn,
@@ -90,8 +101,19 @@ const modules = [
   sholat,
   hijri,
   qibla,
-  prayermode,
-  islamic,
+   prayermode,
+   islamic,
+   bmi,
+   bmr,
+   tdee,
+   water,
+   idealweight,
+   caloriesburn,
+   pace,
+   workout,
+   exercise,
+   stretch,
+   fitness,
 ];
 
 export const commandRegistry = new Map();

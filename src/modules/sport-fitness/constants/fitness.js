@@ -1,0 +1,55 @@
+export const FITNESS_CONSTANTS = Object.freeze({
+  BMI_CATEGORIES: [
+    { min: 0, max: 18.4, label: 'Kurus', color: '⚠️' },
+    { min: 18.5, max: 24.9, label: 'Normal', color: '✅' },
+    { min: 25, max: 29.9, label: 'Gemuk', color: '⚠️' },
+    { min: 30, max: 100, label: 'Obesitas', color: '🚫' },
+  ],
+  ACTIVITY_LEVELS: Object.freeze({
+    sedentary: { label: 'Tidak aktif (kantor)', multiplier: 1.2 },
+    light: { label: 'Ringan (olahraga 1-3x/minggu)', multiplier: 1.375 },
+    moderate: { label: 'Sedang (olahraga 3-5x/minggu)', multiplier: 1.55 },
+    active: { label: 'Aktif (olahraga 6-7x/minggu)', multiplier: 1.725 },
+    extreme: { label: 'Sangat aktif (atlet)', multiplier: 1.9 },
+  }),
+  CALORIE_BURN: Object.freeze({
+    walking: { met: 3.5, label: 'Walking' },
+    running: { met: 9.8, label: 'Running' },
+    cycling: { met: 7.5, label: 'Cycling' },
+    workout: { met: 6.0, label: 'Workout' },
+  }),
+  WORKOUTS: Object.freeze({
+    beginner: [
+      { name: 'Push Up', reps: '10x', rest: '60s' },
+      { name: 'Squat', reps: '15x', rest: '60s' },
+      { name: 'Plank', reps: '30s', rest: '45s' },
+      { name: 'Mountain Climber', reps: '10x', rest: '60s' },
+    ],
+    intermediate: [
+      { name: 'Push Up', reps: '20x', rest: '45s' },
+      { name: 'Squat', reps: '25x', rest: '45s' },
+      { name: 'Plank', reps: '60s', rest: '30s' },
+      { name: 'Burpee', reps: '10x', rest: '60s' },
+      { name: 'Lunge', reps: '15x', rest: '45s' },
+    ],
+    advanced: [
+      { name: 'Push Up', reps: '30x', rest: '30s' },
+      { name: 'Squat Jump', reps: '20x', rest: '30s' },
+      { name: 'Plank', reps: '90s', rest: '30s' },
+      { name: 'Burpee', reps: '15x', rest: '45s' },
+      { name: 'Mountain Climber', reps: '20x', rest: '30s' },
+      { name: 'Lunge Jump', reps: '15x', rest: '45s' },
+    ],
+  }),
+  STRETCHES: [
+    { name: 'Neck Roll', duration: '30s', desc: 'Putar leher perlahan' },
+    { name: 'Shoulder Roll', duration: '30s', desc: 'Putar bahu ke depan & belakang' },
+    { name: 'Arm Stretch', duration: '30s', desc: 'Tarik tangan ke atas & samping' },
+    { name: 'Torso Twist', duration: '30s', desc: 'Putar badan kiri-kanan' },
+    { name: 'Hamstring Stretch', duration: '30s', desc: 'Condong ke depan, jangan paksa' },
+    { name: 'Quad Stretch', duration: '30s', desc: 'Tarik kaki ke belakang, bertumpu' },
+    { name: 'Calf Stretch', duration: '30s', desc: 'Dorong tumit ke lantai' },
+    { name: 'Hip Opener', duration: '30s', desc: 'Buka pinggul lebar' },
+  ],
+  WATER_ML_PER_KG: 35,
+});

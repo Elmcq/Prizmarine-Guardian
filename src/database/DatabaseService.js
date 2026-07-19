@@ -24,6 +24,7 @@ export class DatabaseService {
     tickets: { file: DB_FILES.tickets, defaults: DEFAULTS.tickets },
     staff: { file: DB_FILES.staff, defaults: DEFAULTS.staff },
     islamic: { file: DB_FILES.islamic, defaults: DEFAULTS.islamic },
+    fitness: { file: DB_FILES.fitness, defaults: DEFAULTS.fitness },
   };
 
  for (const [name, { file, defaults }] of Object.entries(definitions)) {
@@ -77,6 +78,7 @@ export class DatabaseService {
   get tickets() { return this.dbs.tickets; }
   get staff() { return this.dbs.staff; }
   get islamic() { return this.dbs.islamic; }
+  get fitness() { return this.dbs.fitness; }
   get backupDir() { return BACKUP_DIR; }
 }
 

@@ -1,5 +1,42 @@
 # Changelog
 
+## v1.4.0
+
+**Sport & Fitness Module — Calculators, Workout, Nutrition, Reminders**
+
+Status: Feature Release
+
+### Added
+- `!bmi <berat> <tinggi>` — Body Mass Index calculator
+- `!bmr <gender> <usia> <berat> <tinggi>` — Basal Metabolic Rate calculator
+- `!tdee <gender> <usia> <berat> <tinggi> <aktivitas>` — Total Daily Energy Expenditure
+- `!water <berat>` — rekomendasi asupan air harian
+- `!idealweight <tinggi>` — estimasi berat badan ideal
+- `!caloriesburn <aktivitas> <berat> <menit>` — hitung kalori terbakar (walking, running, cycling, workout)
+- `!pace <distance_km> <time_min>` — hitung pace lari
+- `!workout [level]` — workout harian (beginner/intermediate/advanced)
+- `!exercise [level]` — alias untuk !workout
+- `!stretch` — stretching routine
+- `!fitness reminder on/off` — aktifkan/nonaktifkan fitness reminder
+- `!fitness workout <HH:MM>` — atur waktu workout reminder
+- `!fitness meal <HH:MM>` — atur waktu meal reminder
+- `FitnessReminderRepository` — persistence layer (data/fitness.json)
+- `FitnessReminderScheduler` — cron-based reminder (workout + meal)
+- 7 calculator modules (BMI, BMR, TDEE, Water, IdealWeight, CaloriesBurned, Pace)
+- 50+ kota Indonesia database (from Islamic module)
+
+### Changed
+- `src/config/constants.js` — added `fitness` to DB_FILES and DEFAULTS
+- `src/database/DatabaseService.js` — added fitness getter and initialization
+- `src/index.js` — wired FitnessReminderRepository, FitnessReminderScheduler
+- `src/commands/index.js` — registered all fitness commands (12 new commands)
+
+### Fixed
+- Scheduler reliability for fitness reminders
+- Timezone handling in fitness reminders (Asia/Jakarta, UTC+7)
+
+---
+
 ## v1.3.0
 
 **Islamic Module — Prayer Times, Hijri Calendar, Qibla, Auto-Lock**

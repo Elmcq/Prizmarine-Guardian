@@ -21,6 +21,7 @@ export const DB_FILES = Object.freeze({
     tickets: path.join(DATA_DIR, 'tickets.json'),
     staff: path.join(DATA_DIR, 'staff.json'),
     islamic: path.join(DATA_DIR, 'islamic.json'),
+    fitness: path.join(DATA_DIR, 'fitness.json'),
 });
 
 export const BACKUP_DIR = path.join(DATA_DIR, 'backups');
@@ -143,5 +144,8 @@ badwords: {
   islamic: {
   groups: {},
   prayerCache: {},
+  },
+  fitness: {
+  reminders: [],
   },
 });
