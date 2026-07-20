@@ -1,23 +1,32 @@
+```
 # Dependencies
 node_modules/
 
-# WhatsApp session cache (LocalAuth)
-.wwebjs_auth/
+# Compiled/Generated files
+dist/
+build/
+*.js.map
+*.min.js
 
-# Runtime logs
-logs/
-
-# Runtime data (contains user PII — phone numbers, warnings, bans, incidents)
-# NEVER commit this folder EXCEPT badwords.json (keyword lists, no PII)
-data/*
-!data/badwords.json
-
-# Local environment / secrets
-.env
-
-# OS / editor cruft
-.DS_Store
+# Logs and temp files
 *.log
+*.tmp
 
-# ZCode session artifacts (tooling, not part of the bot)
-.zcode/
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# Python (if applicable)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+```

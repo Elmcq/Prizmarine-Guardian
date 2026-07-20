@@ -17,10 +17,22 @@ constructor(client, logger, settings = null) {
  this.settings = settings;
  this.cache = new Map();
  this.phoneCache = new Map();
+ this._cleanupInterval = setInterval(() => this._cleanup(), CACHE_TTL_MS / 2);
  for (const [id, profile] of Object.entries(settings?.getContactProfiles?.() || {})) {
   if (profile?.name) this.cache.set(id, { name: profile.name, type: profile.type, ts: profile.updatedAt || 0 });
  }
 }
+
+ /** @private Periodic cleanup to prevent memory leaks */
+ _cleanup() {
+  const now = Date.now();
+  for (const [id, profile] of this.cache.entries()) {
+   if (now - profile.ts > CACHE_TTL_MS) this.cache.delete(id);
+  }
+  for (const [id, ts] of this.phoneCache.entries()) {
+   if (now - ts > CACHE_TTL_MS) this.phoneCache.delete(id);
+  }
+ }
 
  setClient(client) {
  this.client = client;
@@ -125,6 +137,13 @@ constructor(client, logger, settings = null) {
  _looksLikeWhatsAppId(id) {
  const value = String(id);
  return value.includes('@') || /^\d{7,}$/.test(value);
+ }
+
+ /** Stop cleanup interval */
+ destroy() {
+ if (this._cleanupInterval) clearInterval(this._cleanupInterval);
+ this.cache.clear();
+ this.phoneCache.clear();
  }
 }
 

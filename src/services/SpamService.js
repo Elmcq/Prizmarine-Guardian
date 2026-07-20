@@ -22,6 +22,20 @@ export class SpamService {
     this.floodCount = floodCount;
     /** @private key "groupId:userId" -> { timestamps:number[], lastText:string|null, streak:number } */
     this._state = new Map();
+    this._cleanupInterval = setInterval(() => this._cleanup(), Math.min(spamWindow, 60000));
+  }
+
+  /** @private Periodic cleanup to prevent memory leaks */
+  _cleanup() {
+    const now = Date.now();
+    const maxAge = Math.max(this.spamWindow, 60000);
+    for (const [key, rec] of this._state.entries()) {
+      if (rec.timestamps.length === 0 && !rec.lastText) {
+        this._state.delete(key);
+      } else {
+        rec.timestamps = rec.timestamps.filter(t => now - t <= maxAge);
+      }
+    }
   }
 
   /**
@@ -71,8 +85,9 @@ export class SpamService {
     this._state.delete(`${groupId}:${userId}`);
   }
 
-  /** Clear all tracking state. */
+  /** Clear all tracking state and stop cleanup interval. */
   clear() {
+    if (this._cleanupInterval) clearInterval(this._cleanupInterval);
     this._state.clear();
   }
 }

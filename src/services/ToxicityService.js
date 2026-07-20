@@ -18,6 +18,12 @@ export class ToxicityService {
   this.words = [];
   this.patterns = [];
   this.reload();
+  this.pipeline.startCleanup();
+ }
+
+ /** Stop cleanup interval to prevent memory leaks */
+ destroy() {
+  this.pipeline.stopCleanup();
  }
 
  isEnabled() {

@@ -411,6 +411,20 @@ export class ContextualModerationPipeline {
   }
  }
 
+ /** Start periodic cleanup to prevent memory leaks */
+ startCleanup() {
+  if (this._cleanupInterval) return;
+  this._cleanupInterval = setInterval(() => this.cleanupCooldowns(), Math.min(this.config.cooldownDurationMs, 30000));
+ }
+
+ /** Stop cleanup interval */
+ stopCleanup() {
+  if (this._cleanupInterval) {
+   clearInterval(this._cleanupInterval);
+   this._cleanupInterval = null;
+  }
+ }
+
  // Main detection method — runs all 8 stages
  detect(text, message = {}, authorId = '') {
   const normalizedText = this.normalizeText(text);

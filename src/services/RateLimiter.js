@@ -23,6 +23,22 @@ export class RateLimiter {
     this._cooldowns = new Map();
     /** @private userId -> { windowStart, count } */
     this._rates = new Map();
+    this._cleanupInterval = setInterval(() => this._cleanup(), Math.min(windowMs, 60000));
+  }
+
+  /** @private Periodic cleanup to prevent memory leaks */
+  _cleanup() {
+    const now = Date.now();
+    for (const [userId, rate] of this._rates.entries()) {
+      if (now - rate.windowStart > this.windowMs * 2) {
+        this._rates.delete(userId);
+      }
+    }
+    for (const [userId, cd] of this._cooldowns.entries()) {
+      const stale = Object.entries(cd).filter(([, ts]) => now - ts > this.cooldownMs * 2);
+      for (const [cmd] of stale) delete cd[cmd];
+      if (Object.keys(cd).length === 0) this._cooldowns.delete(userId);
+    }
   }
 
   /**
@@ -82,6 +98,13 @@ export class RateLimiter {
   reset(userId) {
     this._cooldowns.delete(userId);
     this._rates.delete(userId);
+  }
+
+  /** Stop cleanup interval to prevent memory leaks. */
+  destroy() {
+    if (this._cleanupInterval) clearInterval(this._cleanupInterval);
+    this._cooldowns.clear();
+    this._rates.clear();
   }
 }
 

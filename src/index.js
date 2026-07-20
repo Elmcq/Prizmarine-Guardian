@@ -153,6 +153,9 @@ async function bootstrap() {
      islamicService.stop();
      fitnessScheduler.stop();
      audit.stop();
+     toxicity.destroy();
+     rateLimiter.destroy();
+     spam.clear();
  await client.destroy();
  } catch (err) {
  logger.error('Error during shutdown', { error: err.message });
